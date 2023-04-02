@@ -121,6 +121,10 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     # Generate response
     response = generate_response(augmented_query)
 
+    # Remove duplicate URLs and anything that does not contain 'twilio.com'
+    urls = list(set(urls))
+    urls = [url for url in urls if 'twilio.com' in url]
+
     return response, urls
 
 
