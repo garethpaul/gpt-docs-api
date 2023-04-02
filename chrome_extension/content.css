@@ -1,0 +1,611 @@
+body {
+    display: block;
+    margin: 8px;
+}
+
+.gpt-docs-nav-link {
+    /* create a linear gradient at 90 degrees with repeated colors */
+    /*background-image: linear-gradient(90deg, #8C4F9E, #273556, #47536F, #8C4F9E);*/
+    background-size: 400%;
+    animation: wave 20s linear infinite;
+}
+
+/* use the same gradient and animation for the hover state */
+.gpt-docs-nav-link:hover {
+    background-color: #47536F;
+}
+
+.docs-nav__icon {
+    max-width: 120px;
+    padding-top: 8px;
+}
+
+.modal {
+    font-family: "Whitney SSm A",
+        "Whitney SSm B",
+        "Helvetica Neue",
+        "Helvetica",
+        "Arial",
+        sans-serif;
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background-color: white;
+    border-radius: 5px;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.modal {
+    position: fixed;
+    /* Fix the position of the modal */
+    top: 50%;
+    /* Set the top position to 50% of the viewport */
+    left: 50%;
+    /* Set the left position to 50% of the viewport */
+    width: 55%;
+    /* Set the width to 55% */
+    background-color: white;
+    /* Set the background color to white */
+    z-index: 99999;
+    /* Set a high z-index value to place the modal above other elements */
+    border-radius: 10px;
+    /* Set a border radius */
+    transform: translate(-50%, -50%);
+    /* Center the modal */
+    padding: 0px;
+    /* Set some padding */
+}
+
+.top-bar {
+    /* width: 100%; */
+    /* Set the width to 100% */
+    height: 50px;
+    /* Set the height to 50px */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: space-between;
+    /* Distribute space between items */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Show the modal when the "modal-show" class is added */
+.modal-show {
+    display: block;
+}
+
+.modal form input {
+    font-family: "Open Sans", sans-serif;
+}
+
+/* Define the blinking cursor animation */
+@keyframes blink {
+    0% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Apply the blinking cursor animation to the .cursor element */
+.cursor {
+    animation: blink 0.7s infinite;
+    font-weight: bold;
+    /* display in line with the typewriter text */
+    display: none;
+
+}
+
+#typewriterText {
+    font-family: "Open Sans", sans-serif;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    text-align: left;
+    border: none;
+    outline: none;
+    font-size: 16px;
+    font-weight: bold;
+    color: #000;
+    margin-top: -80px;
+}
+
+/* Container for the loading bar */
+.loading-bar-container {
+    width: 95%;
+    /* Set the desired width of the loading bar */
+    height: 6px;
+    /* Set the desired height of the loading bar */
+    background-color: #E5E6E8;
+    /* Set the background color to E5E6E8 */
+    overflow: hidden;
+    /* Hide the overflowing part of the loading bar */
+    position: relative;
+    /* Set the position to relative for child positioning */
+    border-radius: 5px;
+    /* Set the border radius to 5px */
+    margin: 20px;
+}
+
+/* Loading bar with gradient and animation */
+.loading-bar {
+    position: absolute;
+    /* Position the bar within the container */
+    left: -100%;
+    /* Start position (completely hidden on the left) */
+    width: 100%;
+    /* Width of the loading bar */
+    height: 100%;
+    /* Height of the loading bar */
+    background: linear-gradient(to right, #F22F46, #273556, #E5E6E8);
+    /* Gradient colors */
+    animation: slide 2s infinite;
+    /* Animation to slide the bar */
+    border-radius: 5px;
+    /* Set the border radius to 5px */
+}
+
+/* Keyframes animation to slide the loading bar from left to right */
+@keyframes slide {
+    from {
+        left: -100%;
+    }
+
+    to {
+        left: 100%;
+    }
+}
+
+.gpt-loading {
+    /* width: 100%; */
+    /* Set the width to 100% */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    border-top: 3px solid rgb(228, 229, 233);
+}
+
+.modal-response__link {
+    font-family: "Open Sans", sans-serif;
+    /* add underlined text in twilio blue */
+    color: #7C61F5;
+    text-decoration: underline;
+    margin-bottom: 6px;
+    font-size: 15px;
+    color: #008cff;
+    opacity: 0.999;
+    text-decoration: underline;
+    padding: 0px;
+}
+
+.modal-response ul {
+    list-style-type: none;
+    padding: 0px;
+    margin: 0px;
+}
+
+.modal-response ul a {
+    padding: 0px;
+    margin: 0px;
+}
+
+.wave-text {
+    font-size: 24px;
+    background-image: linear-gradient(90deg, #F22F46, #47536F, #273556, #F22F46);
+    background-size: 400% auto;
+    color: transparent;
+    animation: wave 10s linear infinite;
+    /* Apply the background only to the text content */
+    background-clip: text;
+    -webkit-background-clip: text;
+    /* For better browser compatibility */
+    /* Ensure the text remains visible if the background-clip is not supported */
+    text-fill-color: transparent;
+    -webkit-text-fill-color: transparent;
+    /* For better browser compatibility */
+}
+
+@keyframes wave {
+    0% {
+        background-position: 100% 0;
+    }
+
+    100% {
+        background-position: 0 0;
+    }
+}
+
+.overlay-darken {
+    position: fixed;
+    /* Fix the position of the overlay */
+    top: 0;
+    /* Set the top position to 0 */
+    left: 0;
+    /* Set the left position to 0 */
+    width: 100%;
+    /* Set the width to 100% of the viewport */
+    height: 100%;
+    /* Set the height to 100% of the viewport */
+    background-color: black;
+    /* Set the background color to black */
+    opacity: 0.7;
+    /* Set the opacity to create a semi-transparent effect */
+    z-index: 9999;
+    /* Set a high z-index value to place the overlay above other elements */
+}
+
+.modal-response {
+    /* width: 100%; */
+    /* Set the width to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Center items vertically */
+    justify-content: center;
+    /* Center items horizontally */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Set flex direction to column */
+    text-align: left;
+    /* Set text alignment to left */
+    border-top: 3px solid #E4E5E9;
+    /* Add a border to the top */
+    margin-bottom: 30px;
+}
+
+.sources {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    text-align: left;
+    /* Set text alignment to left */
+    font-size: 18px;
+    /* Set font size to 18px */
+    font-weight: 900;
+    /* Set font weight to 900 (bold) */
+    color: #000;
+    /* Set text color to black */
+    margin-bottom: 20px;
+    /* Set bottom margin to 20px */
+    margin-top: 20px;
+    /* Set top margin to 20px */
+}
+
+.modal-response__link {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Set flex direction to column */
+    text-align: left;
+    /* Set text alignment to left */
+    font-size: 16px;
+    /* Set font size to 16px */
+}
+
+.modal-response-h2 {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    text-align: left;
+    /* Set text alignment to left */
+    font-size: 18px;
+    /* Set font size to 18px */
+    font-weight: 500;
+    /* Set font weight to 900 (bold) */
+    color: rgb(35, 54, 89);
+    /* Set text color to black */
+    margin-bottom: 20px;
+    /* Set bottom margin to 20px */
+    margin-top: 20px;
+    /* Set top margin to 20px */
+}
+
+.response__p {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Set flex direction to column */
+    text-align: left;
+    /* Set text alignment to left */
+    font-size: 16px;
+    /* Set font size to 16px */
+    font-weight: normal;
+    /* Set font weight to normal */
+    color: #000;
+    /* Set text color to black */
+    margin-bottom: 20px;
+    /* Set bottom margin to 20px */
+}
+
+.modal-response__link {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Set flex direction to column */
+    text-align: left;
+    /* Set text alignment to left */
+    font-size: 16px;
+    /* Set font size to 16px */
+}
+
+.modal-response__link {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Set flex direction to column */
+}
+
+.modal-response__link {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+}
+
+.gpt-loading__h2 {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: left;
+    /* Align items to the left */
+    justify-content: center;
+    /* Center items horizontally */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Set flex direction to column */
+    text-align: left;
+    /* Set text alignment to left */
+    font-size: 16px;
+    /* Set font size to 16px */
+    font-weight: 500;
+    /* Set font weight to bold */
+    color: rgb(35, 54, 89);
+    /* Set text color to black */
+    margin-bottom: 20px;
+    /* Set bottom margin to 20px */
+    margin-top: 20px;
+    /* Set top margin to 20px */
+}
+
+.close {
+    color: black;
+    /* Set the color to black */
+    font-size: 30px;
+    /* Set the font size to 30px */
+    font-weight: bold;
+    /* Set the font weight to bold */
+    cursor: pointer;
+    /* Set the cursor to pointer */
+    margin-left: auto;
+    /* Make sure the close button is on the right */
+}
+
+.top-bar__title {
+    color: rgb(35, 54, 89);
+    /* Set the color to black */
+    font-size: 20px;
+    /* Set the font size to 20px */
+    font-weight: 500;
+    /* Set the font weight to bold */
+    margin-left: auto;
+    /* position exactly in the center horizontally */
+    /* position exactly in the center horizontally */
+}
+
+.pill-container {
+    background-color: rgba(242, 47, 70, 0.42);
+    /* Set the background color with transparency */
+    padding: 5px 10px;
+    /* Apply padding on top/bottom and left/right */
+    margin-left: 10px;
+    /* Set left margin to 10px */
+    border-radius: 5px;
+    /* Set border radius to 5px */
+    /* float the pill to the right */
+}
+
+.pill {
+    color: #F22F46;
+    /* Set the color to #F22F46 */
+    font-size: 12px;
+    /* Set the font size to 12px */
+    font-weight: 500;
+    /* Set the font weight to bold */
+}
+
+.modal-content {
+    /* width: 100%; */
+    /* Set the width to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: center;
+    /* Center items horizontally */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    border-top: 3px solid #E4E5E9;
+    /* Set a border at the top */
+    padding-top: 23px;
+    /* Set padding at the top */
+}
+
+.left {
+    width: 5%;
+    /* Set the width to 5% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: center;
+    /* Center items horizontally */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+}
+
+.left-content {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: center;
+    /* Center items horizontally */
+    padding: 0 20px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Arrange items in a column */
+    text-align: center;
+    /* Center the text */
+}
+
+.question {
+    width: 30px;
+    /* Set the width to 30px */
+    height: 30px;
+    /* Set the height to 30px */
+    max-width: 30px;
+    /* Set the maximum width to 30px */
+    margin-bottom: 20px;
+    /* Set the bottom margin to 20px */
+}
+
+.right {
+    width: 95%;
+    /* Set the width to 95% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: center;
+    /* Center items horizontally */
+}
+
+.right-content {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: flex-start;
+    /* Align items to the left */
+    justify-content: flex-start;
+    /* Start items from the left */
+    flex-direction: column;
+    /* Arrange items in a column */
+    text-align: left;
+    /* Align the text to the left */
+}
+
+.form {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: center;
+    /* Center items horizontally */
+    padding: 0 5px;
+    /* Apply padding on left and right */
+    flex-direction: column;
+    /* Arrange items in a column */
+    text-align: center;
+    /* Center the text */
+    margin-top: -20px;
+    /* Set the top margin to -20px */
+}
+
+.input {
+    width: 100%;
+    /* Set the width to 100% */
+    height: 100%;
+    /* Set the height to 100% */
+    display: flex;
+    /* Use flex layout */
+    align-items: center;
+    /* Align items to the center */
+    justify-content: center;
+    /* Center items horizontally */
+    flex-direction: column;
+    /* Arrange items in a column */
+    text-align: left;
+    /* Align the text to the left */
+    border: none;
+    /* Remove the border */
+    outline: none;
+    /* Remove the outline */
+    font-size: 18px;
+    /* Set the font size to 16px */
+    font-weight: normal;
+    /* Set the font weight to bold */
+    color: rgb(35, 54, 89);
+    /* Set the text color to black */
+}
