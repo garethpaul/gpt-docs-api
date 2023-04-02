@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "GPT Dev Docs",
+  "version": "1.0",
+  "description": "Add GPT Dev Docs to Twilio Docs",
+  "icons": {
+    "48": "icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.twilio.com/*/docs/*",
+        "https://twilio.com/*/docs/*",
+        "https://www.twilio.com/docs/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "management"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["logo-nav.svg", "question.svg", "gpt-docs-nav.png"],
+      "matches": ["<all_urls>"]
+    }  ]
+}
