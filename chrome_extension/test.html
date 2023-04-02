@@ -1,0 +1,51 @@
+<html>
+
+<head>
+    <!-- import content.css -->
+    <link rel="stylesheet" href="content.css" />
+    <script src="segment-snippet.js"></script>
+    <style>
+        /* content.css */
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #233659;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .docs-nav__secondary {
+            list-style-type: none;
+            padding: 0;
+            text-align: center;
+        }
+
+        .docs-nav__secondary li {
+            margin: 10px 0;
+            color: #ffffff;
+            /* Set text color to white for better visibility on the dark background */
+        }
+
+        .docs-nav__icon {
+            max-width: 900px;
+        }
+
+        .gpt-docs-nav-link:hover {
+            background-color: #233659;
+            /* change the pointer to a hand when hovering over the link */
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <ul class="docs-nav__secondary">
+    </ul>
+
+    <script src="content.js"></script>
+</body>
+
+</html>
