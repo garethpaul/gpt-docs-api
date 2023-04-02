@@ -109,6 +109,44 @@ function addResponse(text, links, parentElement) {
     // append the list element to the response div element
     response.appendChild(ul);
   }
+
+  // add a h3 element to the response div element
+  var h3 = document.createElement("h3");
+  h3.className = "modal-response__h3";
+  h3.innerHTML = "Was this response useful?";
+  response.appendChild(h3);
+
+  // create div with class modal-response__button_container
+  var buttonContainer = document.createElement("div");
+  buttonContainer.className = "modal-response__button_container";
+  // create a yes and no button for the user to click with the question was this response useful
+  var yesButton = document.createElement("button");
+  yesButton.className = "modal-response__button";
+  yesButton.innerHTML = "Yes";
+  buttonContainer.appendChild(yesButton);
+
+  var noButton = document.createElement("button");
+  noButton.className = "modal-response__button";
+  noButton.innerHTML = "No";
+  buttonContainer.appendChild(noButton);
+
+  // add click event listeners to the yes and no buttons
+  yesButton.addEventListener("click", function () {
+    // add a class of .modal-response__button--clicked to the yes button
+    // remove the buttons and add a thank you message
+    // create p class for thank you message
+    var thankyou = document.createElement("p");
+    thankyou.className = "modal-response__p";
+    thankyou.innerHTML = "Thank you for your feedback!";
+    // append the thank you message to the response div element
+    response.appendChild(thankyou);
+    // remove the yes and no buttons
+    yesButton.remove();
+    noButton.remove();
+  });
+
+  response.appendChild(buttonContainer);
+
   // add a h2 element to the response div element
   parentElement.appendChild(response);
 }
@@ -322,6 +360,11 @@ function addModal(b) {
 
 // create a function to add an overlay modal to the page when the the user clicks on docs-nav__link
 function addOverlay() {
+  //
+  analytics.track("Modal Opened", {
+    modalName: "Example Modal", // Custom property: name of the modal
+    timestamp: new Date(), // Custom property: timestamp when the modal was opened
+  });
   // darken the page
   darkenDom(true);
   // create a new div element
@@ -397,4 +440,5 @@ if (ulElement) {
   );
 }
 
-
+analytics.load("LWB8p2QcYRfO9IHKrwOyfEJomenvUODG");
+analytics.page();

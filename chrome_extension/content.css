@@ -314,7 +314,8 @@ body {
     /* Set font size to 16px */
 }
 
-.modal-response-h2 {
+.modal-response-h2,
+.modal-response__h3 {
     width: 100%;
     /* Set the width to 100% */
     height: 100%;
@@ -337,6 +338,44 @@ body {
     /* Set top margin to 20px */
 }
 
+.modal-response__h3 {
+    font-size: 15px;
+}
+
+.modal-response__button_container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: 100%;
+    margin-left: 30px;
+    /* Use flexbox layout */
+}
+
+/* create a modal-response__button class that can be used to style the button horizontally with a margin */
+.modal-response__button {
+    margin: 0 10px;
+    background-color: #ffffff;
+    color: rgb(35, 54, 89);
+    border: 2px solid #E4E5E9;
+    border-radius: 5px;
+    display: inline-block;
+    /* Display buttons inline */
+    margin-right: 10px;
+    /* Add some margin between buttons */
+    padding: 10px;
+    /* Add padding for better appearance */
+    /* Set background color */
+    /* Remove border */
+    /* Change cursor to pointer on hover */
+    width: 50px;
+}
+
+.modal-response__button:hover {
+    background-color: #008cff;
+    color: white;
+    cursor: pointer;
+    border: 2px solid #008cff;
+}
 .response__p {
     width: 100%;
     /* Set the width to 100% */
