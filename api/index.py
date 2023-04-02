@@ -3,8 +3,9 @@ from flask import Flask, request, jsonify, make_response
 import pinecone
 import openai
 import os
+import json
 from flask_cors import cross_origin
-from typing import Tuple, List
+from typing import Tuple, List, Dict, Optional
 
 app = Flask(__name__)
 
@@ -128,6 +129,72 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     return response, urls
 
 
+def extract_json_object(text) -> Dict[str, float]:
+    """
+    Extract and parse the JSON object from the API response.
+
+    Args:
+        api_resp (str): The API response containing the JSON object.
+
+    Returns:
+        Dict[str, float]: A dictionary containing the classification and
+        weights.
+    """
+    # Find the start and end indices of the JSON object
+    start_index = text.find('{')
+    end_index = text.rfind('}') + 1
+
+    # Extract the JSON substring
+    json_str = text[start_index:end_index]
+
+    # Parse the JSON substring and convert it to a Python dictionary
+    try:
+        json_obj = json.loads(json_str)
+    except:
+        print('Failed to parse JSON object')
+        print(json_str)
+        json_obj = {}
+
+    return json_obj
+
+
+def generate_classification(model: str, query: str) -> Dict[str, float]:
+    """
+    Generate a classification for a given query using the specified OpenAI
+    model.
+
+    Args:
+        model (str): The name of the OpenAI GPT model to use.
+        query (str): The user query for classification.
+
+    Returns:
+        Dict[str, float]: A dictionary containing the classification and
+        weights.
+
+    Raises:
+        Exception: If the OpenAI API returns an error.
+    """
+    primer = (
+        "You are a classification expert. You must provide a weighting"
+        " estimate for each with_code, minimal_code, and no_code. You must"
+        " provide a best guess at the estimate in a JSON object only respond"
+        f" with the object and no other text:\n\n {query}"
+    )
+
+    try:
+        response = openai.ChatCompletion.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": primer},
+                {"role": "user", "content": query}
+            ]
+        )
+        api_resp = response['choices'][0]['message']['content']
+        return extract_json_object(api_resp)
+    except Exception as error:
+        raise Exception(f"Failed to generate classification: {str(error)}")
+
+
 @app.route('/ask', methods=['POST', 'OPTIONS'])
 @cross_origin()
 def ask_question():
@@ -170,3 +237,33 @@ def hello_world():
         resp (json): A JSON response containing a hello world message."""
     resp = jsonify({'message': 'Hello World!'})
     return resp
+
+
+@app.route('/classify/builder', methods=['POST', 'OPTIONS'])
+@cross_origin()
+def classify_builder():
+    """
+    An endpoint for classifying users based on the question they ask.
+
+    Returns:
+        resp(json): A JSON response containing the classification label."""
+    try:
+        # Check if the request body is JSON
+        if not request.is_json:
+            return make_response(jsonify({'error': 'Request body must be JSON'}), 400)
+
+        # Extract the query from the request JSON body
+        query = request.json.get('query')
+        if not query:
+            return make_response(jsonify({'error': 'Missing "query" key in request body'}), 400)
+
+        # Get the response and links using the make_query function
+        classifier = generate_classification(GPT_MODEL, query)
+
+        # Create a JSON response with the response and links
+        resp = jsonify({'weights': classifier})
+        return resp
+
+    except Exception as error:
+        # Handle any unexpected errors
+        return make_response(jsonify({'error': str(error)}), 500)
