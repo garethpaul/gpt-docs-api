@@ -3,11 +3,19 @@
 ### Disclaimer
 <small>This code does not represent, nor is it affiliated with, any official project or initiative of Twilio company. This is not an officially sponsored, endorsed, or approved by the company. It is provided "as is" without any warranties or guarantees. </small>
 
-![](/screenshots/query_resp_screenshot.png)
-
 ### Plan
 
 We plan to crawl all the public twilio doc pages and then expose a q&a type interface to ask questions against the twilio docs. 
+
+The experiment contains three main parts:
+
+1) Data Processing and Modelling - crawling, text embedding and indexing.
+2) API - gpt-4 with the embeddings for Q&A.
+3) Chrome Extensions / Single Page - expose a Q&A interface.
+
+![](/screenshots/query_resp_screenshot.png)
+
+### Milestones
 
 **Web Crawling**
 
