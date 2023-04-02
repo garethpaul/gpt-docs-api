@@ -1,5 +1,4 @@
 import logging
-from pinecone.types import Index
 from flask import Flask, request, jsonify, make_response
 import pinecone
 import openai
@@ -48,7 +47,7 @@ def create_index_if_not_exists(index_name: str, dimension: int, metric: str) -> 
         raise
 
 
-def get_index() -> Index:
+def get_index():
     """
     Get or create a Pinecone index.
 
