@@ -13,7 +13,9 @@
         "https://twilio.com/*/docs/*",
         "https://www.twilio.com/docs/*"
       ],
-      "js": ["content.js"]
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
     }
   ],
   "permissions": [
