@@ -28,8 +28,12 @@ newListItem.className = "docs-nav__item";
 
 // Get the logo-nav.svg image
 var newLogoNavImg;
-if (chrome.runtime) {
-  newLogoNavImg = chrome.runtime.getURL("gpt-docs-nav.png");
+if (typeof chrome !== "undefined") {
+  if (chrome.runtime) {
+    newLogoNavImg = chrome.runtime.getURL("gpt-docs-nav.png");
+  } else {
+    newLogoNavImg = "gpt-docs-nav.png";
+  }
 } else {
   newLogoNavImg = "gpt-docs-nav.png";
 }
@@ -291,11 +295,16 @@ function addModal(b) {
 
     var question = document.createElement("img");
     question.className = "question";
-    if (chrome.runtime) {
-      question.src = chrome.runtime.getURL("question.svg");
+    if (typeof chrome !== "undefined") {
+      if (chrome.runtime) {
+        question.src = chrome.runtime.getURL("question.svg");
+      } else {
+        question.src = "question.svg";
+      }
     } else {
       question.src = "question.svg";
     }
+
     //question.src = chrome.runtime.getURL("question.svg");
 
     // Append the content to the left
@@ -355,7 +364,7 @@ function addModal(b) {
             if (response.status === 200) {
               // log the response
               if (response.data) {
-                  analytics.track("user_type", response.data);
+                analytics.track("user_type", response.data);
               }
             }
           });
