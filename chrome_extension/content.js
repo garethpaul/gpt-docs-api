@@ -355,7 +355,7 @@ function addModal(b) {
             if (response.status === 200) {
               // log the response
               if (response.data) {
-                analytics.track("user_type", response.data);
+                  analytics.track("user_type", response.data);
               }
             }
           });
