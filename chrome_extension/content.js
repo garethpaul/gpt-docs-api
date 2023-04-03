@@ -151,6 +151,35 @@ function addResponse(text, links, parentElement) {
   parentElement.appendChild(response);
 }
 
+async function sendAhoy(query) {
+  // Define the endpoint URL
+  const url = "https://gpt-docs.api.garethpaul.com/classify/builder";
+
+  // Define the request options
+  const requestOptions = {
+    method: "POST", // Specify the request method
+    headers: {
+      "Content-Type": "application/json", // Set the content type to JSON
+    },
+    body: JSON.stringify(query), // Convert the query object to a JSON string
+  };
+
+  try {
+    // Make the fetch request and handle the response
+    const response = await fetch(url, requestOptions);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    // Parse the response JSON
+    const responseData = await response.json();
+    return responseData;
+  } catch (error) {
+    console.error("Error making POST request:", error);
+    return null;
+  }
+}
+
 function removeLoader(parentElement) {
   // remove the loader
   parentElement.querySelector(".gpt-loading").remove();
@@ -318,6 +347,18 @@ function addModal(b) {
           removeLoader(modal);
           // if there is an existing response remove it
           addResponse(data.response, data.links, modal);
+          // Send the data to ahoy
+          sendAhoy({
+            query: input.value,
+          }).then((response) => {
+            // if the response is successful
+            if (response.status === 200) {
+              // log the response
+              if (response.data) {
+                analytics.track("user_type", response.data);
+              }
+            }
+          });
           // clear the input value
           clearInput();
         });
