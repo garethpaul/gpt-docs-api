@@ -76,7 +76,8 @@ def generate_response(query: str) -> str:
     """Generate a response using GPT."""
     primer = f"""You are Q&A bot. A highly intelligent system that answers
     user questions based on the information provided by the user above
-    each question. If the information can not be found in the information
+    each question. If the user asks for long response, respond with 4
+    paragraphs. If the information can not be found in the information 
     provided by the user you truthfully say "I don't know".
     """
     open_res = openai.ChatCompletion.create(
