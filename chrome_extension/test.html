@@ -40,6 +40,20 @@
             cursor: pointer;
         }
     </style>
+    <script>
+        // Get the current page URL
+        const currentUrl = window.location.href;
+
+        // Check if the current URL matches the specified pattern
+        if (currentUrl === "https://garethpaul.github.io/gpt-docs-api/chrome_extension/test.html") {
+            // Construct the new URL
+            const newUrl = "https://gpt-docs.api.garethpaul.com/public/test.html";
+
+            // Navigate to the new URL
+            window.location.href = newUrl;
+        }
+
+    </script>
 </head>
 
 <body>
