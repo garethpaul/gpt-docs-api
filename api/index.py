@@ -208,7 +208,7 @@ def generate_classification(model: str, query: str) -> Dict[str, float]:
 
 
 @app.route('/ask', methods=['POST', 'OPTIONS'])
-@cross_origin(origins=['https://garethpaul.github.io/', 'http://localhost:3000'])
+@cross_origin()
 def ask_question():
     """
     Process a user query and return a generated response and relevant links.
