@@ -1,5 +1,5 @@
 import logging
-from flask import Flask, request, jsonify, make_response
+from flask import Flask, send_from_directory, request, jsonify, make_response
 import pinecone
 import openai
 import os
@@ -21,6 +21,17 @@ OPENAI_API_KEY_ENV = 'OPENAI_API_KEY'
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Get the absolute path to the chrome_extension folder
+chrome_extension_directory = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '../chrome_extension'))
+
+
+@app.route('/public/<path:filename>')
+def serve_public(filename):
+    """
+    Serve the public files."""
+    return send_from_directory(chrome_extension_directory, filename)
 
 
 def init_pinecone() -> None:
