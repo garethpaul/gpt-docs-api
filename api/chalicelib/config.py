@@ -1,0 +1,11 @@
+# Configurations and constants
+
+INDEX_NAME = 'gpt-4-langchain-docs'
+INDEX_DIMENSION = 1536
+INDEX_METRIC = 'dotproduct'
+PINECONE_API_KEY_ENV = 'PINECONE_API_KEY'
+PINECONE_ENVIRONMENT_ENV = 'PINECONE_ENVIRONMENT'
+EMBEDDING_MODEL = "text-embedding-ada-002"
+GPT_MODEL = "gpt-3.5-turbo"
+OPENAI_API_KEY_ENV = 'OPENAI_API_KEY'
+CACHE_TABLE_NAME = 'gpt_docs'

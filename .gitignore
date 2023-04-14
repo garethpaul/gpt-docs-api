@@ -22,6 +22,8 @@ deployment.zip
 .chalice
 .chalice/deployments/
 .chalice/venv/
+# Ignore the dev.json with arn info etc.
+dev.json
 
 # DS_Store
 .DS_Store
