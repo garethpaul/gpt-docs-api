@@ -10,4 +10,20 @@ env/
 venv/ 
 ENV/ 
 env.bak/ 
-venv.bak/ 
+venv.bak/
+
+# Ignore Chalice's default config file
+config.json
+
+# Ignore Chalice's default deployment package
+deployment.zip
+
+# Ignore Chalice local data
+.chalice
+.chalice/deployments/
+.chalice/venv/
+# Ignore the dev.json with arn info etc.
+dev.json
+
+# DS_Store
+.DS_Store
