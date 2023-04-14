@@ -157,7 +157,8 @@ function addResponse(text, links, parentElement) {
 
 async function sendAhoy(query) {
   // Define the endpoint URL
-  const url = "https://gpt-docs.api.garethpaul.com/classify/builder";
+  const url =
+    "https://wj2mszjum0.execute-api.us-west-2.amazonaws.com/api/classify/builder";
 
   // Define the request options
   const requestOptions = {
@@ -342,7 +343,8 @@ function addModal(b) {
       // and the response data as the response
       // and the modal as the modal
       createLoader(modal);
-      fetch("https://gpt-docs.api.garethpaul.com/ask", {
+      fetch("https://wj2mszjum0.execute-api.us-west-2.amazonaws.com/api/ask", {
+        //fetch("http://localhost:8000/ask", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
