@@ -71,9 +71,3 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Contributing
 
 Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
-
-## Existing Project Notes
-
-Prior README summary:
-
-> GPT-Docs for Twilio Docs Disclaimer <small>This code does not represent, nor is it affiliated with, any official project or initiative of Twilio company. This is not an officially sponsored, endorsed, or approved by the company. It is provided "as is" without any warranties or guarantees. </small> Plan We plan to crawl all the public twilio doc pages and then expose a q&a type interface to ask questions against the twilio docs.
