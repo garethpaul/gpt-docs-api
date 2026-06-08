@@ -45,3 +45,46 @@ The experiment contains three main parts:
 **Todo**
 - [ ] Consider other places to crawl beyond docs.
 
+### API Setup
+
+The Chalice API lives in `api/`.
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+python -m pip install -r api/requirements.txt
+```
+
+Required environment variables for live API calls:
+
+- `OPENAI_API_KEY`
+- `PINECONE_API_KEY`
+- `PINECONE_ENVIRONMENT`
+
+AWS credentials and region configuration are required for live DynamoDB cache access.
+
+### Quality Gates
+
+Run the deterministic local tests:
+
+```bash
+make test
+```
+
+Run syntax compilation over first-party source and tests:
+
+```bash
+make compile
+```
+
+Run both gates:
+
+```bash
+make verify
+```
+
+These checks do not require AWS, OpenAI, or Pinecone credentials.
+
+### Dependency Modernization Notes
+
+This baseline keeps OpenAI and Pinecone on their latest legacy-compatible lines: `openai==0.28.1` and `pinecone-client[grpc]==2.2.4`. Current latest major versions require code changes to the client APIs and should be handled in a dedicated follow-up after the test baseline is in place.

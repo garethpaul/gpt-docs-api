@@ -20,6 +20,7 @@ from chalicelib.config import (
     INDEX_METRIC,
     GPT_MODEL
 )
+from chalicelib.utils import validate_request_payload
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -180,16 +181,10 @@ def ask_question():
         # Extract the JSON payload from the request
         request_json = app.current_request.json_body
 
-        # Check if the request body is JSON
-        if not request_json:
-            return Response(body={'error': 'Request body must be JSON'},
-                            status_code=400)
-
-        # Extract the query from the request JSON body
-        query = request_json.get('query')
-        if not query:
-            return Response(body={'error': 'Missing "query" key in request body'},
-                            status_code=400)
+        try:
+            query = validate_request_payload(request_json)
+        except ValueError as error:
+            return Response(body={'error': str(error)}, status_code=400)
 
         # Check cache for a matching query
         cache_entry = get_cached_response(query)
@@ -236,15 +231,10 @@ def classify_builder():
         # Extract the JSON payload from the request
         request_json = app.current_request.json_body
 
-        # Check if the request body is JSON
-        if not request_json:
-            return Response(body={'error': 'Request body must be JSON'},
-                            status_code=400)
-
-        # Extract the query from the request JSON body
-        query = request_json.get('query')
-        if not query:
-            return Response(body={'error': 'Missing "query" key in request body'}, status_code=400)
+        try:
+            query = validate_request_payload(request_json)
+        except ValueError as error:
+            return Response(body={'error': str(error)}, status_code=400)
 
         # Get the response and links using the make_query function
         classifier = generate_classification(GPT_MODEL, query)

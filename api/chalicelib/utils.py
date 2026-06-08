@@ -1,4 +1,3 @@
-from chalice import BadRequestError
 from typing import Dict
 import json
 
@@ -8,10 +7,10 @@ def validate_request_payload(request_json) -> str:
     Validate the request payload and extract the query.
     """
     if not request_json:
-        raise BadRequestError('Request body must be JSON')
+        raise ValueError('Request body must be JSON')
     query = request_json.get('query')
     if not query:
-        raise BadRequestError('Missing "query" key in request body')
+        raise ValueError('Missing "query" key in request body')
     return query
 
 
@@ -30,15 +29,16 @@ def extract_json_object(text) -> Dict[str, float]:
     start_index = text.find('{')
     end_index = text.rfind('}') + 1
 
+    if start_index == -1 or end_index == 0:
+        return {}
+
     # Extract the JSON substring
     json_str = text[start_index:end_index]
 
     # Parse the JSON substring and convert it to a Python dictionary
     try:
         json_obj = json.loads(json_str)
-    except:
-        print('Failed to parse JSON object')
-        print(json_str)
+    except json.JSONDecodeError:
         json_obj = {}
 
     return json_obj

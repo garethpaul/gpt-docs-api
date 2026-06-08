@@ -4,11 +4,12 @@ from typing import List, Dict
 from chalicelib.config import OPENAI_API_KEY_ENV, EMBEDDING_MODEL, GPT_MODEL
 from chalicelib.utils import extract_json_object
 
-def get_embeddings(query: str) -> List[float]:
+
+def get_embeddings(query: str, openai_client=openai) -> List[float]:
     """Get embeddings for the query text."""
     embed_model = EMBEDDING_MODEL
-    openai.api_key = os.environ.get(OPENAI_API_KEY_ENV)
-    res = openai.Embedding.create(
+    openai_client.api_key = os.environ.get(OPENAI_API_KEY_ENV)
+    res = openai_client.Embedding.create(
         input=[query],
         engine=embed_model
     )
@@ -16,7 +17,7 @@ def get_embeddings(query: str) -> List[float]:
     return embedding_vector
 
 
-def generate_response(query: str) -> str:
+def generate_response(query: str, openai_client=openai) -> str:
     """Generate a response using GPT."""
     primer = f"""You are Q&A bot. A highly intelligent system that answers
     user questions based on the information provided by the user above
@@ -24,7 +25,7 @@ def generate_response(query: str) -> str:
     paragraphs. If the information can not be found in the information 
     provided by the user you truthfully say "I don't know".
     """
-    open_res = openai.ChatCompletion.create(
+    open_res = openai_client.ChatCompletion.create(
         model=GPT_MODEL,
         messages=[
             {"role": "system", "content": primer},
@@ -34,7 +35,9 @@ def generate_response(query: str) -> str:
     return open_res['choices'][0]['message']['content']
 
 
-def generate_classification(model: str, query: str) -> Dict[str, float]:
+def generate_classification(model: str,
+                            query: str,
+                            openai_client=openai) -> Dict[str, float]:
     """
     Generate a classification for a given query using the specified OpenAI
     model.
@@ -58,7 +61,7 @@ def generate_classification(model: str, query: str) -> Dict[str, float]:
     )
 
     try:
-        response = openai.ChatCompletion.create(
+        response = openai_client.ChatCompletion.create(
             model=model,
             messages=[
                 {"role": "system", "content": primer},
