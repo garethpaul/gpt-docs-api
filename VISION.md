@@ -19,6 +19,7 @@ The current focus is:
 Priority:
 
 - Preserve deterministic local tests that do not require live credentials
+- Require caller authentication before API routes spend server AI credentials
 - Keep OpenAI, Pinecone, and AWS credentials out of git
 - Maintain the disclaimer and public-docs scope
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
@@ -36,6 +37,8 @@ Contribution rules:
 - Run `make verify` before pushing code changes.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
+- Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger
+  route authorizer.
 
 ## Security And Accuracy
 

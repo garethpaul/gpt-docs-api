@@ -6,6 +6,11 @@ import pinecone
 import os
 from chalice import Chalice, Response, CORSConfig, BadRequestError
 from typing import Tuple, List
+from chalicelib.auth import (
+    AuthenticationConfigurationError,
+    AuthenticationError,
+    require_api_key
+)
 from chalicelib.cache import get_cached_response, store_in_cache
 from chalicelib.classification import (
     generate_response,
@@ -28,10 +33,10 @@ logger = logging.getLogger(__name__)
 # CORS configuration to allow all origins
 cors_config = CORSConfig(
     allow_origin='*',
-    allow_headers=['Content-Type'],
+    allow_headers=['Content-Type', 'Authorization', 'X-GPT-Docs-API-Key'],
     max_age=600,
     expose_headers=['Content-Type'],
-    allow_credentials=True
+    allow_credentials=False
 )
 
 
@@ -168,6 +173,19 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     return response, urls
 
 
+def authorize_request():
+    """
+    Return an HTTP response when the current request is not authorized.
+    """
+    try:
+        require_api_key(app.current_request.headers)
+    except AuthenticationConfigurationError as error:
+        return Response(body={'error': str(error)}, status_code=503)
+    except AuthenticationError as error:
+        return Response(body={'error': str(error)}, status_code=401)
+    return None
+
+
 @app.route('/ask', methods=['POST'], cors=cors_config)
 def ask_question():
     """
@@ -178,6 +196,10 @@ def ask_question():
         resp (json): A JSON response containing the generated response and relevant links.
     """
     try:
+        unauthorized_response = authorize_request()
+        if unauthorized_response is not None:
+            return unauthorized_response
+
         # Extract the JSON payload from the request
         request_json = app.current_request.json_body
 
@@ -228,6 +250,10 @@ def classify_builder():
     Returns:
         resp(json): A JSON response containing the classification label."""
     try:
+        unauthorized_response = authorize_request()
+        if unauthorized_response is not None:
+            return unauthorized_response
+
         # Extract the JSON payload from the request
         request_json = app.current_request.json_body
 

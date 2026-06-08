@@ -7,14 +7,20 @@ README="$ROOT_DIR/README.md"
 VISION="$ROOT_DIR/VISION.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 REQUIREMENTS="$ROOT_DIR/api/requirements.txt"
+APP="$ROOT_DIR/api/app.py"
+AUTH="$ROOT_DIR/api/chalicelib/auth.py"
 CACHE="$ROOT_DIR/api/chalicelib/cache.py"
 CLASSIFICATION="$ROOT_DIR/api/chalicelib/classification.py"
+CONFIG="$ROOT_DIR/api/chalicelib/config.py"
 UTILS="$ROOT_DIR/api/chalicelib/utils.py"
+TEST_APP_AUTH="$ROOT_DIR/api/tests/test_app_auth.py"
+TEST_AUTH="$ROOT_DIR/api/tests/test_auth.py"
 TEST_CACHE="$ROOT_DIR/api/tests/test_cache.py"
 TEST_CLASSIFICATION="$ROOT_DIR/api/tests/test_classification.py"
 TEST_UTILS="$ROOT_DIR/api/tests/test_utils.py"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md"
 CHECK_PLAN="$ROOT_DIR/docs/plans/2026-06-08-source-baseline-guard.md"
+AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-auth-guard.md"
 
 require_file() {
   path=$1
@@ -32,13 +38,17 @@ for path in \
   "Makefile" \
   "api/requirements.txt" \
   "api/app.py" \
+  "api/chalicelib/auth.py" \
   "api/chalicelib/cache.py" \
   "api/chalicelib/classification.py" \
   "api/chalicelib/config.py" \
   "api/chalicelib/utils.py" \
+  "api/tests/test_app_auth.py" \
+  "api/tests/test_auth.py" \
   "api/tests/test_cache.py" \
   "api/tests/test_classification.py" \
   "api/tests/test_utils.py" \
+  "docs/plans/2026-06-08-gpt-docs-api-auth-guard.md" \
   "docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md" \
   "docs/plans/2026-06-08-source-baseline-guard.md" \
   "scripts/check-baseline.sh"; do
@@ -62,6 +72,37 @@ for requirement in \
     exit 1
   fi
 done
+
+if ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
+  ! grep -Fq "GPT_DOCS_API_KEY_HEADER = 'X-GPT-Docs-API-Key'" "$CONFIG"; then
+  printf '%s\n' "Config must declare the caller auth environment variable and header." >&2
+  exit 1
+fi
+
+if ! grep -Fq "class AuthenticationConfigurationError" "$AUTH" ||
+  ! grep -Fq "class AuthenticationError" "$AUTH" ||
+  ! grep -Fq "def require_api_key(headers, environ=os.environ)" "$AUTH" ||
+  ! grep -Fq "hmac.compare_digest" "$AUTH" ||
+  ! grep -Fq "Authorization" "$TEST_AUTH" ||
+  ! grep -Fq "GPT_DOCS_API_KEY_HEADER" "$TEST_AUTH"; then
+  printf '%s\n' "Auth helper and unit tests must protect the shared-key contract." >&2
+  exit 1
+fi
+
+if ! grep -Fq "allow_credentials=False" "$APP" ||
+  ! grep -Fq "X-GPT-Docs-API-Key" "$APP" ||
+  ! grep -Fq "def authorize_request()" "$APP" ||
+  ! grep -Fq "unauthorized_response = authorize_request()" "$APP"; then
+  printf '%s\n' "Chalice routes must include the auth guard and non-credentialed wildcard CORS." >&2
+  exit 1
+fi
+
+if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_work" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_classify_rejects_unauthenticated_callers_before_body_or_model_work" "$TEST_APP_AUTH" ||
+  ! grep -Fq "assert_not_called" "$TEST_APP_AUTH"; then
+  printf '%s\n' "Route auth tests must prove unauthenticated calls do not spend model work." >&2
+  exit 1
+fi
 
 if ! grep -Fq "def get_cache_table(resource=None)" "$CACHE" ||
   ! grep -Fq "def get_cached_response(query, table=None)" "$CACHE" ||
@@ -100,24 +141,28 @@ fi
 
 if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "CHANGES.md" "$README" ||
+  ! grep -Fq "GPT_DOCS_API_KEY" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
   ! grep -Fq "Pinecone" "$README"; then
   printf '%s\n' "README must document verification, changelog, and external service boundaries." >&2
   exit 1
 fi
 
-if ! grep -Fq "Run \`make verify\`" "$VISION"; then
-  printf '%s\n' "VISION.md must keep the make verify contribution rule visible." >&2
+if ! grep -Fq "Run \`make verify\`" "$VISION" ||
+  ! grep -Fq "GPT_DOCS_API_KEY" "$VISION"; then
+  printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
   exit 1
 fi
 
-if ! grep -Fq "source baseline guard" "$CHANGES"; then
-  printf '%s\n' "CHANGES.md must record the source baseline guard." >&2
+if ! grep -Fq "source baseline guard" "$CHANGES" ||
+  ! grep -Fq "shared API-key guard" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
   exit 1
 fi
 
 if ! grep -Fq "status: completed" "$PLAN" ||
-  ! grep -Fq "status: completed" "$CHECK_PLAN"; then
+  ! grep -Fq "status: completed" "$CHECK_PLAN" ||
+  ! grep -Fq "status: completed" "$AUTH_PLAN"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
 fi

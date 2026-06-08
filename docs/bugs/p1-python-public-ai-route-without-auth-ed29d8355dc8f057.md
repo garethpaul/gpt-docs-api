@@ -23,6 +23,14 @@ The application exposes POST routes that accept caller-supplied JSON and call Op
 
 Require an API Gateway authorizer, JWT/session, or dedicated proxy API key before reading the request body or invoking OpenAI/Pinecone, narrow wildcard CORS where possible, add rate limits, and cover unauthenticated requests with tests that prove the model helpers are not called.
 
+## Resolution
+
+Resolved on 2026-06-08 by adding the `GPT_DOCS_API_KEY` shared-key guard to
+`/ask` and `/classify/builder`, accepting caller credentials via
+`X-GPT-Docs-API-Key` or `Authorization: Bearer <token>`, failing closed when the
+deployment secret is missing, and adding tests that prove unauthenticated
+requests do not read request bodies or call model helpers.
+
 ## Review metadata
 
 - Repository: `garethpaul/gpt-docs-api`

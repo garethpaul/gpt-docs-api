@@ -62,11 +62,22 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 ## Configuration and Secrets
 
-- Detected references to OpenAI, Twilio. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
+- Detected references to OpenAI, Pinecone, AWS, and Twilio. Keep API keys,
+  OAuth credentials, tokens, and account-specific values in local
+  configuration only.
+- Set `GPT_DOCS_API_KEY` on deployments that expose `/ask` or
+  `/classify/builder`. Callers must send the same value in
+  `X-GPT-Docs-API-Key` or `Authorization: Bearer <token>` before those routes
+  read request bodies or spend server-side OpenAI/Pinecone credentials.
+- Set `OPENAI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENVIRONMENT`, and AWS
+  credentials only in local or deployment environment configuration.
 
 ## Security and Privacy Notes
 
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 6 more.
+- Keep `/ask` and `/classify/builder` behind the shared caller API-key guard or
+  a stronger API Gateway/JWT authorizer. Public asset routes may remain
+  unauthenticated.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
 - Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.
@@ -80,6 +91,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md`
   for the current testability and dependency baseline.
 - See `docs/plans/2026-06-08-source-baseline-guard.md` for the source guard.
+- See `docs/plans/2026-06-08-gpt-docs-api-auth-guard.md` for the API route
+  authentication guard.
 
 ## Contributing
 
