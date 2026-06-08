@@ -1,7 +1,7 @@
 ---
 title: GPT Docs API Testability and Dependency Baseline
 type: chore
-status: active
+status: completed
 date: 2026-06-08
 ---
 

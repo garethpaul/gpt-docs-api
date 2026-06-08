@@ -88,7 +88,10 @@ class ClassificationTests(unittest.TestCase):
             FakeChatCompletion.calls[0]["messages"][-1],
             {"role": "user", "content": "What is Twilio?"},
         )
-        self.assertIn("I don't know", FakeChatCompletion.calls[0]["messages"][0]["content"])
+        self.assertIn(
+            "I don't know",
+            FakeChatCompletion.calls[0]["messages"][0]["content"],
+        )
 
     def test_generate_classification_parses_json_response(self):
         FakeChatCompletion.response = {

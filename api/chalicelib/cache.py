@@ -17,7 +17,7 @@ def get_cached_response(query, table=None):
     """
     Get the cached response for the given query string.
     """
-    cache_table = table or get_cache_table()
+    cache_table = table if table is not None else get_cache_table()
     cache_entry = cache_table.get_item(Key={'query_string': query}).get('Item')
     return cache_entry
 
@@ -26,6 +26,6 @@ def store_in_cache(query, response, links, table=None):
     """
     Store the response and links in the cache.
     """
-    cache_table = table or get_cache_table()
+    cache_table = table if table is not None else get_cache_table()
     cache_table.put_item(
         Item={'query_string': query, 'response': response, 'links': links})

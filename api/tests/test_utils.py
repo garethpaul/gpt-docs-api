@@ -25,7 +25,9 @@ class UtilsTests(unittest.TestCase):
 
     def test_extract_json_object_from_surrounding_text(self):
         self.assertEqual(
-            extract_json_object('prefix {"with_code": 0.7, "no_code": 0.3} suffix'),
+            extract_json_object(
+                'prefix {"with_code": 0.7, "no_code": 0.3} suffix'
+            ),
             {"with_code": 0.7, "no_code": 0.3},
         )
 
