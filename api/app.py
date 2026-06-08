@@ -4,7 +4,7 @@
 import logging
 import pinecone
 import os
-from chalice import Chalice, Response, CORSConfig, BadRequestError
+from chalice import Chalice, Response, CORSConfig
 from typing import Tuple, List
 from chalicelib.auth import (
     AuthenticationConfigurationError,
@@ -49,6 +49,38 @@ current_directory = os.path.dirname(os.path.abspath(__file__))
 # Construct the path to the public directory
 directory_path = os.path.join(current_directory, 'chalicelib', 'public')
 
+PUBLIC_CONTENT_TYPES = {
+    '.txt': 'text/plain',
+    '.json': 'application/json',
+    '.html': 'text/html',
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+}
+
+
+def safe_public_file_path(filename):
+    """Return a public asset path only when it stays inside the public root."""
+    public_root = os.path.realpath(directory_path)
+    requested_path = os.path.realpath(os.path.join(public_root, filename))
+
+    if requested_path != public_root and not requested_path.startswith(
+        public_root + os.sep
+    ):
+        raise ValueError('Invalid public file path')
+
+    if not os.path.isfile(requested_path):
+        raise FileNotFoundError(f"File '{filename}' not found.")
+
+    return requested_path
+
+
+def public_content_type(file_path):
+    """Return the response content type for a public asset."""
+    _, extension = os.path.splitext(file_path)
+    return PUBLIC_CONTENT_TYPES.get(extension.lower(), 'application/octet-stream')
+
 
 @app.route('/public/{filename}', methods=['GET'])
 def serve_public(filename):
@@ -56,42 +88,25 @@ def serve_public(filename):
     Serve the public files from the specified directory.
     """
     try:
-        # Construct the full file path
-        file_path = os.path.join(directory_path, filename)
-        # Check if the file exists
-        if not os.path.isfile(file_path):
-            raise BadRequestError(f"File '{filename}' not found.")
+        file_path = safe_public_file_path(filename)
 
         # Read the file content
         with open(file_path, 'rb') as file:
             file_content = file.read()
 
-        # Set the content type based on the file extension (optional)
-        content_type = None
-        if file_path.endswith('.txt'):
-            content_type = 'text/plain'
-        elif file_path.endswith('.json'):
-            content_type = 'application/json'
-        elif file_path.endswith('.html'):
-            content_type = 'text/html'
-        elif file_path.endswith('.js'):
-            content_type = 'application/javascript'
-        elif file_path.endswith('.css'):
-            content_type = 'text/css'
-        elif file_path.endswith('.png'):
-            content_type = 'image/png'
-        elif file_path.endswith('.svg'):
-            content_type = 'image/svg+xml'
-        # Add more content types if needed
-
         # Return the file content as a response
         return Response(body=file_content,
                         status_code=200,
-                        headers={'Content-Type': content_type})
+                        headers={'Content-Type': public_content_type(file_path)})
 
-    except Exception as error:
-        # Handle any unexpected errors
-        return Response(body=str(error), status_code=500)
+    except ValueError as error:
+        return Response(body={'error': str(error)}, status_code=400)
+    except FileNotFoundError as error:
+        return Response(body={'error': str(error)}, status_code=404)
+    except OSError as error:
+        logger.error(f'Failed to serve public file: {error}')
+        return Response(body={'error': 'Unable to read public file'},
+                        status_code=500)
 
 
 def init_pinecone() -> None:

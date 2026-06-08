@@ -77,7 +77,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - Review changes touching external API calls or credential-adjacent configuration; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 6 more.
 - Keep `/ask` and `/classify/builder` behind the shared caller API-key guard or
   a stronger API Gateway/JWT authorizer. Public asset routes may remain
-  unauthenticated.
+  unauthenticated, but public asset routes must stay path-bound to
+  `api/chalicelib/public`.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
 - Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.
@@ -93,6 +94,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-08-source-baseline-guard.md` for the source guard.
 - See `docs/plans/2026-06-08-gpt-docs-api-auth-guard.md` for the API route
   authentication guard.
+- See `docs/plans/2026-06-08-public-file-boundary.md` for the public asset
+  path boundary.
 
 ## Contributing
 

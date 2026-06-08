@@ -21,6 +21,7 @@ TEST_UTILS="$ROOT_DIR/api/tests/test_utils.py"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md"
 CHECK_PLAN="$ROOT_DIR/docs/plans/2026-06-08-source-baseline-guard.md"
 AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-auth-guard.md"
+PUBLIC_PLAN="$ROOT_DIR/docs/plans/2026-06-08-public-file-boundary.md"
 
 require_file() {
   path=$1
@@ -50,6 +51,7 @@ for path in \
   "api/tests/test_utils.py" \
   "docs/plans/2026-06-08-gpt-docs-api-auth-guard.md" \
   "docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md" \
+  "docs/plans/2026-06-08-public-file-boundary.md" \
   "docs/plans/2026-06-08-source-baseline-guard.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -97,10 +99,22 @@ if ! grep -Fq "allow_credentials=False" "$APP" ||
   exit 1
 fi
 
+if ! grep -Fq "def safe_public_file_path(filename)" "$APP" ||
+  ! grep -Fq "os.path.realpath" "$APP" ||
+  ! grep -Fq "public_root + os.sep" "$APP" ||
+  ! grep -Fq "FileNotFoundError" "$APP" ||
+  ! grep -Fq "def public_content_type(file_path)" "$APP"; then
+  printf '%s\n' "Public file serving must keep path-boundary and content-type helpers." >&2
+  exit 1
+fi
+
 if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_work" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_classify_rejects_unauthenticated_callers_before_body_or_model_work" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_serve_public_returns_known_asset_with_content_type" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_serve_public_returns_404_for_missing_asset" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_serve_public_rejects_path_traversal" "$TEST_APP_AUTH" ||
   ! grep -Fq "assert_not_called" "$TEST_APP_AUTH"; then
-  printf '%s\n' "Route auth tests must prove unauthenticated calls do not spend model work." >&2
+  printf '%s\n' "Route tests must cover auth short-circuiting and public-file safety." >&2
   exit 1
 fi
 
@@ -142,6 +156,7 @@ fi
 if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "CHANGES.md" "$README" ||
   ! grep -Fq "GPT_DOCS_API_KEY" "$README" ||
+  ! grep -Fq "public asset routes" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
   ! grep -Fq "Pinecone" "$README"; then
   printf '%s\n' "README must document verification, changelog, and external service boundaries." >&2
@@ -149,20 +164,23 @@ if ! grep -Fq "make verify" "$README" ||
 fi
 
 if ! grep -Fq "Run \`make verify\`" "$VISION" ||
-  ! grep -Fq "GPT_DOCS_API_KEY" "$VISION"; then
+  ! grep -Fq "GPT_DOCS_API_KEY" "$VISION" ||
+  ! grep -Fq "public asset" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
   exit 1
 fi
 
 if ! grep -Fq "source baseline guard" "$CHANGES" ||
-  ! grep -Fq "shared API-key guard" "$CHANGES"; then
+  ! grep -Fq "shared API-key guard" "$CHANGES" ||
+  ! grep -Fq "public file path" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
   exit 1
 fi
 
 if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CHECK_PLAN" ||
-  ! grep -Fq "status: completed" "$AUTH_PLAN"; then
+  ! grep -Fq "status: completed" "$AUTH_PLAN" ||
+  ! grep -Fq "status: completed" "$PUBLIC_PLAN"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
 fi

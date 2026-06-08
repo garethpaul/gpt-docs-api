@@ -143,6 +143,26 @@ class AppAuthTests(unittest.TestCase):
         self.assertEqual(request.json_body_accesses, 0)
         classifier.assert_not_called()
 
+    def test_serve_public_returns_known_asset_with_content_type(self):
+        response = self.app_module.serve_public("test.html")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "text/html")
+        self.assertIsInstance(response.body, bytes)
+        self.assertIn(b"<html", response.body)
+
+    def test_serve_public_returns_404_for_missing_asset(self):
+        response = self.app_module.serve_public("missing.js")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.body, {"error": "File 'missing.js' not found."})
+
+    def test_serve_public_rejects_path_traversal(self):
+        response = self.app_module.serve_public("../app.py")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.body, {"error": "Invalid public file path"})
+
 
 if __name__ == "__main__":
     unittest.main()
