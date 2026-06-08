@@ -1,0 +1,50 @@
+## GPT Docs API Vision
+
+GPT Docs API is an experimental Q&A interface for Twilio documentation using
+crawled docs, embeddings, Pinecone, DynamoDB caching, a Chalice API, and a
+Chrome extension surface.
+
+The repository is useful as a retrieval-augmented generation prototype with a
+clear disclaimer that it is not an official Twilio project. Project details and
+quality gates live in [`README.md`](README.md).
+
+The goal is to keep the experiment useful, testable, and safe around API keys,
+documentation crawling, and generated answers.
+
+The current focus is:
+
+Priority:
+
+- Preserve deterministic local tests that do not require live credentials
+- Keep OpenAI, Pinecone, and AWS credentials out of git
+- Maintain the disclaimer and public-docs scope
+- Keep crawling, embedding, retrieval, and answer generation boundaries clear
+
+Next priorities:
+
+- Improve evaluation of answer quality and citation grounding
+- Modernize OpenAI and Pinecone clients in a dedicated pass
+- Keep Chrome extension behavior aligned with API changes
+- Document crawler scope and robots.txt/respectful access behavior
+
+Contribution rules:
+
+- One PR = one focused API, crawler, embedding, extension, or documentation change.
+- Run `make verify` before pushing code changes.
+- Do not commit API keys, cached private data, or generated credentials.
+- Preserve testability without live OpenAI/Pinecone/AWS dependencies.
+
+## Security And Accuracy
+
+RAG systems can leak secrets or generate unsupported answers. Keep credentials
+server-side, avoid logging sensitive questions, and prefer answers grounded in
+retrieved public docs.
+
+The project disclaimer should remain visible.
+
+## What We Will Not Merge For Now
+
+- Committed OpenAI, Pinecone, AWS, or Twilio credentials
+- Open-ended crawling beyond public docs without scope review
+- Answer-generation changes without tests or evaluation notes
+- Client library major upgrades bundled with unrelated behavior changes
