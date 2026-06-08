@@ -1,10 +1,12 @@
 .PHONY: test compile check verify
 
+PYTHON ?= python3
+
 test:
-	PYTHONPATH=api python -m unittest discover -s api/tests
+	PYTHONPATH=api $(PYTHON) -m unittest discover -s api/tests
 
 compile:
-	python -m compileall -q api/app.py api/chalicelib api/tests
+	$(PYTHON) -m compileall -q api/app.py api/chalicelib api/tests
 
 check:
 	scripts/check-baseline.sh

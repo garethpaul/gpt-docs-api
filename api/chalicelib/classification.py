@@ -1,12 +1,19 @@
-import openai
 import os
 from typing import List, Dict
 from chalicelib.config import OPENAI_API_KEY_ENV, EMBEDDING_MODEL, GPT_MODEL
 from chalicelib.utils import extract_json_object
 
 
-def get_embeddings(query: str, openai_client=openai) -> List[float]:
+def default_openai_client():
+    import openai
+
+    return openai
+
+
+def get_embeddings(query: str, openai_client=None) -> List[float]:
     """Get embeddings for the query text."""
+    if openai_client is None:
+        openai_client = default_openai_client()
     embed_model = EMBEDDING_MODEL
     openai_client.api_key = os.environ.get(OPENAI_API_KEY_ENV)
     res = openai_client.Embedding.create(
@@ -17,8 +24,10 @@ def get_embeddings(query: str, openai_client=openai) -> List[float]:
     return embedding_vector
 
 
-def generate_response(query: str, openai_client=openai) -> str:
+def generate_response(query: str, openai_client=None) -> str:
     """Generate a response using GPT."""
+    if openai_client is None:
+        openai_client = default_openai_client()
     primer = f"""You are Q&A bot. A highly intelligent system that answers
     user questions based on the information provided by the user above
     each question. If the user asks for long response, respond with 4
@@ -37,7 +46,7 @@ def generate_response(query: str, openai_client=openai) -> str:
 
 def generate_classification(model: str,
                             query: str,
-                            openai_client=openai) -> Dict[str, float]:
+                            openai_client=None) -> Dict[str, float]:
     """
     Generate a classification for a given query using the specified OpenAI
     model.
@@ -53,6 +62,9 @@ def generate_classification(model: str,
     Raises:
         Exception: If the OpenAI API returns an error.
     """
+    if openai_client is None:
+        openai_client = default_openai_client()
+
     primer = (
         "You are a classification expert. You must provide a weighting"
         " estimate for each with_code, minimal_code, and no_code. You must"

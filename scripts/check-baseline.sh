@@ -37,6 +37,7 @@ for path in \
   "api/chalicelib/config.py" \
   "api/chalicelib/utils.py" \
   "api/tests/test_cache.py" \
+  "api/tests/test_app_auth.py" \
   "api/tests/test_classification.py" \
   "api/tests/test_utils.py" \
   "docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md" \
@@ -86,7 +87,8 @@ if ! grep -Fq "ValueError('Request body must be JSON')" "$UTILS" ||
   exit 1
 fi
 
-if ! grep -Fq "openai_client=openai" "$CLASSIFICATION" ||
+if ! grep -Fq "def default_openai_client()" "$CLASSIFICATION" ||
+  ! grep -Fq "openai_client=None" "$CLASSIFICATION" ||
   ! grep -Fq "Failed to generate classification" "$CLASSIFICATION"; then
   printf '%s\n' "Classification helpers must keep injectable OpenAI clients and wrapped errors." >&2
   exit 1
@@ -95,6 +97,19 @@ fi
 if ! grep -Fq "FakeOpenAI" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "extract_json_object_returns_empty_dict_without_stdout" "$TEST_UTILS"; then
   printf '%s\n' "Tests must cover fake OpenAI clients and quiet JSON parse failures." >&2
+  exit 1
+fi
+
+if ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$ROOT_DIR/api/chalicelib/config.py" ||
+  ! grep -Fq "def require_api_auth()" "$ROOT_DIR/api/app.py" ||
+  ! grep -Fq "is_authorized_request(headers, expected_api_key)" "$UTILS"; then
+  printf '%s\n' "Public AI routes must keep the inbound API-key guard." >&2
+  exit 1
+fi
+
+if ! grep -Fq "test_ask_rejects_missing_key_before_reading_json" "$ROOT_DIR/api/tests/test_app_auth.py" ||
+  ! grep -Fq "test_classification_accepts_x_api_key_header" "$ROOT_DIR/api/tests/test_app_auth.py"; then
+  printf '%s\n' "Auth tests must cover rejected and accepted API-key requests." >&2
   exit 1
 fi
 
@@ -122,7 +137,8 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   exit 1
 fi
 
-PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
-python -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
+PYTHON_BIN=${PYTHON:-python3}
+PYTHONPATH="$ROOT_DIR/api" "$PYTHON_BIN" -m unittest discover -s "$ROOT_DIR/api/tests"
+"$PYTHON_BIN" -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 
 printf '%s\n' "GPT Docs API baseline checks passed."

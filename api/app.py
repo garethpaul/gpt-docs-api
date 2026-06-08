@@ -18,9 +18,10 @@ from chalicelib.config import (
     INDEX_NAME,
     INDEX_DIMENSION,
     INDEX_METRIC,
-    GPT_MODEL
+    GPT_MODEL,
+    GPT_DOCS_API_KEY_ENV
 )
-from chalicelib.utils import validate_request_payload
+from chalicelib.utils import is_authorized_request, validate_request_payload
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 # CORS configuration to allow all origins
 cors_config = CORSConfig(
     allow_origin='*',
-    allow_headers=['Content-Type'],
+    allow_headers=['Content-Type', 'Authorization', 'X-API-Key'],
     max_age=600,
     expose_headers=['Content-Type'],
     allow_credentials=True
@@ -168,6 +169,17 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     return response, urls
 
 
+def require_api_auth():
+    """
+    Require a caller API key before spending server-side AI credentials.
+    """
+    expected_api_key = os.environ.get(GPT_DOCS_API_KEY_ENV)
+    headers = getattr(app.current_request, 'headers', {}) or {}
+    if is_authorized_request(headers, expected_api_key):
+        return None
+    return Response(body={'error': 'Unauthorized'}, status_code=401)
+
+
 @app.route('/ask', methods=['POST'], cors=cors_config)
 def ask_question():
     """
@@ -178,6 +190,10 @@ def ask_question():
         resp (json): A JSON response containing the generated response and relevant links.
     """
     try:
+        unauthorized = require_api_auth()
+        if unauthorized:
+            return unauthorized
+
         # Extract the JSON payload from the request
         request_json = app.current_request.json_body
 
@@ -228,6 +244,10 @@ def classify_builder():
     Returns:
         resp(json): A JSON response containing the classification label."""
     try:
+        unauthorized = require_api_auth()
+        if unauthorized:
+            return unauthorized
+
         # Extract the JSON payload from the request
         request_json = app.current_request.json_body
 

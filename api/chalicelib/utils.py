@@ -1,5 +1,47 @@
 from typing import Dict
+import hmac
 import json
+
+
+def header_value(headers, name):
+    """
+    Return a request header value using case-insensitive lookup.
+    """
+    if not headers:
+        return None
+    lowered = name.lower()
+    for key, value in headers.items():
+        if key.lower() == lowered:
+            return value
+    return None
+
+
+def request_api_key(headers):
+    """
+    Extract the inbound caller API key from supported auth headers.
+    """
+    authorization = header_value(headers, 'Authorization')
+    if authorization:
+        scheme, _, token = authorization.partition(' ')
+        if scheme.lower() == 'bearer' and token:
+            return token.strip()
+
+    api_key = header_value(headers, 'X-API-Key')
+    if api_key:
+        return api_key.strip()
+
+    return None
+
+
+def is_authorized_request(headers, expected_api_key):
+    """
+    Validate caller credentials without leaking timing information.
+    """
+    supplied_api_key = request_api_key(headers)
+    if not expected_api_key or not supplied_api_key:
+        return False
+    return hmac.compare_digest(str(supplied_api_key),
+                               str(expected_api_key))
 
 
 def validate_request_payload(request_json) -> str:

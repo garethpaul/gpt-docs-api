@@ -63,6 +63,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
 ## Configuration and Secrets
 
 - Detected references to OpenAI, Twilio. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
+- Set `GPT_DOCS_API_KEY` in deployed API environments and send it as either `Authorization: Bearer <key>` or `X-API-Key: <key>` when calling AI-backed POST routes.
 
 ## Security and Privacy Notes
 
