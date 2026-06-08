@@ -48,3 +48,6 @@ The project disclaimer should remain visible.
 - Open-ended crawling beyond public docs without scope review
 - Answer-generation changes without tests or evaluation notes
 - Client library major upgrades bundled with unrelated behavior changes
+
+This list is a roadmap guardrail, not a permanent rule.
+Strong user demand and strong technical rationale can change it.
