@@ -1,5 +1,8 @@
 # gpt-docs-api
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ## Overview
 
 `garethpaul/gpt-docs-api` is a static web project. Q&A Type Interface to ask questions against the Twilio docs with GPT-4.
@@ -74,4 +77,3 @@ Keep changes small and tied to the project that is already present in this repos
 Prior README summary:
 
 > GPT-Docs for Twilio Docs <!-- README-OVERVIEW-IMAGE --> Disclaimer <small>This code does not represent, nor is it affiliated with, any official project or initiative of Twilio company. This is not an officially sponsored, endorsed, or approved by the company. It is provided "as is" without any warranties or guarantees. </small> Plan We plan to crawl all the public twilio doc pages and then expose a q&a type interface to ask questions against the twilio docs.
-
