@@ -1,5 +1,8 @@
 # GPT-Docs for Twilio Docs
 
+<!-- README-OVERVIEW-IMAGE -->
+![Project overview](docs/readme-overview.svg)
+
 ### Disclaimer
 <small>This code does not represent, nor is it affiliated with, any official project or initiative of Twilio company. This is not an officially sponsored, endorsed, or approved by the company. It is provided "as is" without any warranties or guarantees. </small>
 
@@ -40,7 +43,6 @@ The experiment contains three main parts:
 - [x] Integrate GPT-4 or a similar language model into the API to enhance the question-answering capabilities.
 - [x] Implement a query mechanism that retrieves the most relevant documentation content from the index based on user queries and uses GPT-4 to generate human-like responses.
 - [x] Ensure the API provides accurate and helpful answers to user questions in real-time.
-
 
 **Todo**
 - [ ] Consider other places to crawl beyond docs.
