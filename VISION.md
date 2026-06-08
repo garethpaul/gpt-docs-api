@@ -1,5 +1,8 @@
 ## GPT Docs API Vision
 
+This document explains the current state and direction of the project.
+Project overview and developer docs: [`README.md`](README.md)
+
 GPT Docs API is an experimental Q&A interface for Twilio documentation using
 crawled docs, embeddings, Pinecone, DynamoDB caching, a Chalice API, and a
 Chrome extension surface.
