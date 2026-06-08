@@ -1,92 +1,77 @@
-# GPT-Docs for Twilio Docs
+# gpt-docs-api
 
-<!-- README-OVERVIEW-IMAGE -->
-![Project overview](docs/readme-overview.svg)
+## Overview
 
-### Disclaimer
-<small>This code does not represent, nor is it affiliated with, any official project or initiative of Twilio company. This is not an officially sponsored, endorsed, or approved by the company. It is provided "as is" without any warranties or guarantees. </small>
+`garethpaul/gpt-docs-api` is a static web project. Q&A Type Interface to ask questions against the Twilio docs with GPT-4.
 
-### Plan
+This README is based on the checked-in source, manifests, scripts, and repository metadata on the `main` branch. The project language mix found during review was: Python (8), JavaScript (4).
 
-We plan to crawl all the public twilio doc pages and then expose a q&a type interface to ask questions against the twilio docs. 
+## Repository Contents
 
-The experiment contains three main parts:
+- `README.md` - project overview and local usage notes
+- `api` - source or example code
+- `chrome_extension` - source or example code
+- `docs` - source or example code
+- `Makefile` - local build or utility targets
+- `SECURITY.md` - security reporting and disclosure guidance
+- `VISION.md` - project direction and maintenance guardrails
 
-1) Data Processing and Modelling - crawling, text embedding and indexing.
-2) API - gpt-4 with the embeddings for Q&A.
-3) Chrome Extensions / Single Page - expose a Q&A interface.
+Additional scan context:
 
-![](/screenshots/query_resp_screenshot.png)
+- Source directories: api, chrome_extension, docs
+- Dependency and build manifests: Makefile
+- Entry points or build surfaces: Makefile
+- Test-looking files: api/chalicelib/public/test.html, api/tests/test_cache.py, api/tests/test_classification.py, api/tests/test_utils.py, chrome_extension/test.html, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md
 
-### Milestones
+## Getting Started
 
-**Web Crawling**
+### Prerequisites
 
-- [x] Develop a web crawler that is capable of traversing and scraping all publicly accessible Twilio documentation pages.
-- [x] Ensure the web crawler adheres to the "robots.txt" file and respects website access restrictions.
-- [x] Extract and store relevant information from the documentation pages, including page content, titles, URLs, and any other metadata.
+- Git
 
-**Text Embedding**
-
-- [x] Implement a text-embedding algorithm or utilize an existing embedding model to convert the crawled Twilio documentation content into vector representations (embeddings).
-- [x] Ensure the embedding process maintains the context and semantics of the documentation content.
-
-**Indexing Embeddings**
-
-- [x] Store and manage the generated embeddings.
-- [x] Implement an upsertion process to efficiently insert or update the embeddings into the index, along with their associated metadata.
-- [x] Ensure the index is optimized for querying and retrieval of similar or relevant content based on user queries.
-
-**Q&A Interface**
-
-- [x] Design and implement an API that allows users to ask questions in natural language and receive answers based on the Twilio documentation content.
-- [x] Integrate GPT-4 or a similar language model into the API to enhance the question-answering capabilities.
-- [x] Implement a query mechanism that retrieves the most relevant documentation content from the index based on user queries and uses GPT-4 to generate human-like responses.
-- [x] Ensure the API provides accurate and helpful answers to user questions in real-time.
-
-**Todo**
-- [ ] Consider other places to crawl beyond docs.
-
-### API Setup
-
-The Chalice API lives in `api/`.
+### Setup
 
 ```bash
-python -m venv .venv
-. .venv/bin/activate
-python -m pip install -r api/requirements.txt
+git clone https://github.com/garethpaul/gpt-docs-api.git
+cd gpt-docs-api
 ```
 
-Required environment variables for live API calls:
+The setup commands above are derived from repository files. Legacy mobile, Python, or JavaScript samples may require older SDKs or package versions than a modern workstation uses by default.
 
-- `OPENAI_API_KEY`
-- `PINECONE_API_KEY`
-- `PINECONE_ENVIRONMENT`
+## Running or Using the Project
 
-AWS credentials and region configuration are required for live DynamoDB cache access.
+- Run `make` or inspect `Makefile` for available targets.
 
-### Quality Gates
+## Testing and Verification
 
-Run the deterministic local tests:
+- `make test` if the Makefile defines that target
 
-```bash
-make test
-```
+When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
-Run syntax compilation over first-party source and tests:
+## Configuration and Secrets
 
-```bash
-make compile
-```
+- Detected references to OpenAI, Twilio. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
 
-Run both gates:
+## Security and Privacy Notes
 
-```bash
-make verify
-```
+- Review changes touching external API calls or credential-adjacent configuration; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 6 more.
+- Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
+- Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
+- Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.
+- Review changes touching infrastructure, proxy, cloud, or deployment configuration; examples from the scan include docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.
 
-These checks do not require AWS, OpenAI, or Pinecone credentials.
+## Maintenance Notes
 
-### Dependency Modernization Notes
+- See `SECURITY.md` for vulnerability reporting and safe research guidance.
+- See `VISION.md` for project direction and contribution guardrails.
 
-This baseline keeps OpenAI and Pinecone on their latest legacy-compatible lines: `openai==0.28.1` and `pinecone-client[grpc]==2.2.4`. Current latest major versions require code changes to the client APIs and should be handled in a dedicated follow-up after the test baseline is in place.
+## Contributing
+
+Keep changes small and tied to the project that is already present in this repository. For code changes, document the toolchain used, avoid committing generated dependency directories or local configuration, and update this README when setup or verification steps change.
+
+## Existing Project Notes
+
+Prior README summary:
+
+> GPT-Docs for Twilio Docs <!-- README-OVERVIEW-IMAGE --> Disclaimer <small>This code does not represent, nor is it affiliated with, any official project or initiative of Twilio company. This is not an officially sponsored, endorsed, or approved by the company. It is provided "as is" without any warranties or guarantees. </small> Plan We plan to crawl all the public twilio doc pages and then expose a q&a type interface to ask questions against the twilio docs.
+
