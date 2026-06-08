@@ -42,7 +42,7 @@ retrieved public docs.
 
 The project disclaimer should remain visible.
 
-## What We Will Not Merge For Now
+## What We Will Not Merge (For Now)
 
 - Committed OpenAI, Pinecone, AWS, or Twilio credentials
 - Open-ended crawling beyond public docs without scope review
