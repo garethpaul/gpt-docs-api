@@ -36,6 +36,11 @@ Contribution rules:
 
 ## Security And Accuracy
 
+Canonical security policy and reporting:
+
+- [`SECURITY.md`](SECURITY.md)
+
+
 RAG systems can leak secrets or generate unsupported answers. Keep credentials
 server-side, avoid logging sensitive questions, and prefer answers grounded in
 retrieved public docs.
