@@ -11,6 +11,7 @@ This README is based on the checked-in source, manifests, scripts, and repositor
 
 ## Repository Contents
 
+- `CHANGES.md` - maintenance history
 - `README.md` - project overview and local usage notes
 - `api` - source or example code
 - `chrome_extension` - source or example code
@@ -47,7 +48,15 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 
 ## Testing and Verification
 
-- `make test` if the Makefile defines that target
+Run the local verification gate before changing the API, cache, or classification helpers:
+
+```bash
+make verify
+```
+
+`make verify` runs deterministic unit tests without live OpenAI, Pinecone, AWS,
+or Twilio credentials, compiles the Chalice app and helper modules, and runs
+`scripts/check-baseline.sh` to protect dependency pins and source guardrails.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -67,6 +76,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 
 - See `SECURITY.md` for vulnerability reporting and safe research guidance.
 - See `VISION.md` for project direction and contribution guardrails.
+- See `CHANGES.md` for maintenance history.
+- See `docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md`
+  for the current testability and dependency baseline.
+- See `docs/plans/2026-06-08-source-baseline-guard.md` for the source guard.
 
 ## Contributing
 
