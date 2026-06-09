@@ -11,6 +11,8 @@
   helpers receive request payloads.
 - Added Twilio link host filtering so generated answer links must use HTTPS
   `twilio.com` or `*.twilio.com` hosts.
+- Added a retrieval metadata guard so incomplete Pinecone matches are skipped
+  before generated answer context is assembled.
 - Added a classification weight schema guard so `/classify/builder` only returns
   finite numeric `with_code`, `minimal_code`, and `no_code` weights.
 

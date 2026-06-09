@@ -26,6 +26,7 @@ QUERY_PLAN="$ROOT_DIR/docs/plans/2026-06-09-request-query-validation.md"
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-query-length-boundary.md"
 CLASSIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-09-classification-weight-schema.md"
 MAKE_GATES_PLAN="$ROOT_DIR/docs/plans/2026-06-09-make-gate-aliases.md"
+RETRIEVAL_METADATA_PLAN="$ROOT_DIR/docs/plans/2026-06-09-retrieval-metadata-guard.md"
 
 require_file() {
   path=$1
@@ -61,6 +62,7 @@ for path in \
   "docs/plans/2026-06-09-request-query-validation.md" \
   "docs/plans/2026-06-09-classification-weight-schema.md" \
   "docs/plans/2026-06-09-make-gate-aliases.md" \
+  "docs/plans/2026-06-09-retrieval-metadata-guard.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -126,6 +128,15 @@ if ! grep -Fq "def is_twilio_doc_url(url)" "$APP" ||
   exit 1
 fi
 
+if ! grep -Fq "def metadata_text_and_url(item)" "$APP" ||
+  ! grep -Fq "isinstance(metadata, dict)" "$APP" ||
+  ! grep -Fq "isinstance(text, str)" "$APP" ||
+  ! grep -Fq "res.get('matches', [])" "$APP" ||
+  ! grep -Fq "metadata_text_and_url(item)" "$APP"; then
+  printf '%s\n' "Retrieval metadata must be validated before answer generation." >&2
+  exit 1
+fi
+
 if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_work" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_classify_rejects_unauthenticated_callers_before_body_or_model_work" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_serve_public_returns_known_asset_with_content_type" "$TEST_APP_AUTH" ||
@@ -133,6 +144,7 @@ if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_wor
   ! grep -Fq "test_serve_public_rejects_path_traversal" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_is_twilio_doc_url_requires_https_twilio_host" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_filters_links_by_twilio_host" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_make_query_skips_incomplete_metadata" "$TEST_APP_AUTH" ||
   ! grep -Fq "assert_not_called" "$TEST_APP_AUTH"; then
   printf '%s\n' "Route tests must cover auth short-circuiting and public-file safety." >&2
   exit 1
@@ -201,6 +213,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "maximum query length" "$README" ||
   ! grep -Fq "public asset routes" "$README" ||
   ! grep -Fq "Twilio link host filtering" "$README" ||
+  ! grep -Fq "retrieval metadata guard" "$README" ||
   ! grep -Fq "classification weight schema" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
   ! grep -Fq "Pinecone" "$README"; then
@@ -216,6 +229,7 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "maximum query length" "$VISION" ||
   ! grep -Fq "public asset" "$VISION" ||
   ! grep -Fq "Twilio link host filtering" "$VISION" ||
+  ! grep -Fq "retrieval metadata guard" "$VISION" ||
   ! grep -Fq "classification weight schema" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
   exit 1
@@ -230,6 +244,7 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "query validation" "$CHANGES" ||
   ! grep -Fq "maximum query length" "$CHANGES" ||
   ! grep -Fq "Twilio link host filtering" "$CHANGES" ||
+  ! grep -Fq "retrieval metadata guard" "$CHANGES" ||
   ! grep -Fq "classification weight schema" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
   exit 1
@@ -243,6 +258,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$QUERY_LENGTH_PLAN" ||
   ! grep -Fq "status: completed" "$CLASSIFICATION_PLAN" ||
   ! grep -Fq "status: completed" "$MAKE_GATES_PLAN" ||
+  ! grep -Fq "status: completed" "$RETRIEVAL_METADATA_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1

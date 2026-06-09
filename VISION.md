@@ -24,6 +24,7 @@ Priority:
 - Maintain the disclaimer and public-docs scope
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
 - Preserve Twilio link host filtering for generated answer citations
+- Preserve the retrieval metadata guard before answer generation
 - Keep request validation bounded by a maximum query length before model work
 - Keep the classification weight schema explicit and numeric before returning
   model output to callers
@@ -47,6 +48,8 @@ Contribution rules:
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger
   route authorizer.
 - Keep Twilio link host filtering on generated answer links.
+- Keep the retrieval metadata guard on Pinecone matches before answer
+  generation.
 - Keep the maximum query length guard in request validation.
 - Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.

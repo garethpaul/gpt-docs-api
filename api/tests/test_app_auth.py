@@ -228,6 +228,47 @@ class AppAuthTests(unittest.TestCase):
             ],
         )
 
+    def test_make_query_skips_incomplete_metadata(self):
+        class FakeIndex:
+            def query(self, *args, **kwargs):
+                return {
+                    "matches": [
+                        {"metadata": {"url": "https://www.twilio.com/docs/skip"}},
+                        {
+                            "metadata": {
+                                "text": "   ",
+                                "url": "https://www.twilio.com/docs/blank",
+                            }
+                        },
+                        {"metadata": {"text": "context a", "url": None}},
+                        {
+                            "metadata": {
+                                "text": "context b",
+                                "url": "https://www.twilio.com/docs/b",
+                            }
+                        },
+                        {},
+                    ]
+                }
+
+        with patch.object(self.app_module, "get_embeddings", return_value=[0.1]):
+            with patch.object(self.app_module, "get_index", return_value=FakeIndex()):
+                with patch.object(
+                    self.app_module,
+                    "generate_response",
+                    return_value="answer",
+                ) as generate_response:
+                    response, links = self.app_module.make_query("How?")
+
+        self.assertEqual(response, "answer")
+        self.assertEqual(links, ["https://www.twilio.com/docs/b"])
+        generate_response.assert_called_once()
+        augmented_query = generate_response.call_args[0][0]
+        self.assertEqual(
+            augmented_query,
+            "context a\n\n---\n\ncontext b\n\n-----\n\nHow?",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

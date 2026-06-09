@@ -95,6 +95,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `minimal_code`, and `no_code` values.
 - Twilio link host filtering keeps generated answer links limited to HTTPS
   `twilio.com` or `*.twilio.com` hosts instead of substring matches.
+- Keep the retrieval metadata guard in place so incomplete Pinecone match
+  metadata is skipped before answer generation.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
 - Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.
@@ -116,6 +118,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   length guard.
 - See `docs/plans/2026-06-09-make-gate-aliases.md` for local verification
   target guardrails.
+- See `docs/plans/2026-06-09-retrieval-metadata-guard.md` for the retrieval
+  metadata guard.
 
 ## Contributing
 

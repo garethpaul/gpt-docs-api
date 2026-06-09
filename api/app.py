@@ -95,6 +95,29 @@ def is_twilio_doc_url(url):
     )
 
 
+def metadata_text_and_url(item):
+    """Return usable retrieval context and URL metadata from a Pinecone match."""
+    metadata = item.get('metadata') if isinstance(item, dict) else getattr(
+        item, 'metadata', None
+    )
+    if not isinstance(metadata, dict):
+        return None, None
+
+    text = metadata.get('text')
+    if not isinstance(text, str):
+        return None, None
+
+    context = text.strip()
+    if not context:
+        return None, None
+
+    url = metadata.get('url')
+    if not isinstance(url, str):
+        url = ''
+
+    return context, url
+
+
 @app.route('/public/{filename}', methods=['GET'])
 def serve_public(filename):
     """
@@ -183,9 +206,13 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     urls = []
 
     # Extract the contexts and URLs from the query results
-    for item in res['matches']:
-        context = item['metadata']['text']
-        url = item['metadata']['url']
+    matches = res.get('matches', []) if hasattr(res, 'get') else getattr(
+        res, 'matches', []
+    )
+    for item in matches:
+        context, url = metadata_text_and_url(item)
+        if context is None:
+            continue
         contexts.append(context)
         urls.append(url)
 
