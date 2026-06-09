@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-09
+
+- Tightened request query validation so `/ask` and `/classify/builder` reject
+  whitespace-only or non-string queries before OpenAI or Pinecone work starts.
+
 ## 2026-06-08
 
 - Added a repository changelog for maintenance history.

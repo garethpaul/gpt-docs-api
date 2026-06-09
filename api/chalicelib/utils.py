@@ -6,9 +6,14 @@ def validate_request_payload(request_json) -> str:
     """
     Validate the request payload and extract the query.
     """
-    if not request_json:
+    if not isinstance(request_json, dict) or not request_json:
         raise ValueError('Request body must be JSON')
     query = request_json.get('query')
+    if query is None:
+        raise ValueError('Missing "query" key in request body')
+    if not isinstance(query, str):
+        raise ValueError('Query must be a string')
+    query = query.strip()
     if not query:
         raise ValueError('Missing "query" key in request body')
     return query

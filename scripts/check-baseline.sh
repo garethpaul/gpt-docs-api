@@ -22,6 +22,7 @@ PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseli
 CHECK_PLAN="$ROOT_DIR/docs/plans/2026-06-08-source-baseline-guard.md"
 AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-auth-guard.md"
 PUBLIC_PLAN="$ROOT_DIR/docs/plans/2026-06-08-public-file-boundary.md"
+QUERY_PLAN="$ROOT_DIR/docs/plans/2026-06-09-request-query-validation.md"
 
 require_file() {
   path=$1
@@ -53,6 +54,7 @@ for path in \
   "docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md" \
   "docs/plans/2026-06-08-public-file-boundary.md" \
   "docs/plans/2026-06-08-source-baseline-guard.md" \
+  "docs/plans/2026-06-09-request-query-validation.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -136,8 +138,16 @@ if grep -Fq "from chalice" "$UTILS" || grep -Fq "BadRequestError" "$UTILS"; then
 fi
 
 if ! grep -Fq "ValueError('Request body must be JSON')" "$UTILS" ||
-  ! grep -Fq "json.JSONDecodeError" "$UTILS"; then
+  ! grep -Fq "json.JSONDecodeError" "$UTILS" ||
+  ! grep -Fq "ValueError('Query must be a string')" "$UTILS" ||
+  ! grep -Fq "query = query.strip()" "$UTILS"; then
   printf '%s\n' "Utility helpers must preserve request and JSON parsing errors." >&2
+  exit 1
+fi
+
+if ! grep -Fq 'validate_request_payload({"query": "   "})' "$TEST_UTILS" ||
+  ! grep -Fq "Query must be a string" "$TEST_UTILS"; then
+  printf '%s\n' "Utility tests must cover whitespace and non-string queries." >&2
   exit 1
 fi
 
@@ -172,7 +182,8 @@ fi
 
 if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "shared API-key guard" "$CHANGES" ||
-  ! grep -Fq "public file path" "$CHANGES"; then
+  ! grep -Fq "public file path" "$CHANGES" ||
+  ! grep -Fq "query validation" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
   exit 1
 fi
@@ -180,7 +191,8 @@ fi
 if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CHECK_PLAN" ||
   ! grep -Fq "status: completed" "$AUTH_PLAN" ||
-  ! grep -Fq "status: completed" "$PUBLIC_PLAN"; then
+  ! grep -Fq "status: completed" "$PUBLIC_PLAN" ||
+  ! grep -Fq "status: completed" "$QUERY_PLAN"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
 fi

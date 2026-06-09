@@ -17,9 +17,15 @@ class UtilsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Missing "query" key'):
             validate_request_payload({"query": ""})
 
+        with self.assertRaisesRegex(ValueError, 'Missing "query" key'):
+            validate_request_payload({"query": "   "})
+
+        with self.assertRaisesRegex(ValueError, 'Query must be a string'):
+            validate_request_payload({"query": ["not", "text"]})
+
     def test_validate_request_payload_returns_query(self):
         self.assertEqual(
-            validate_request_payload({"query": "How do I send an SMS?"}),
+            validate_request_payload({"query": "  How do I send an SMS?  "}),
             "How do I send an SMS?",
         )
 
