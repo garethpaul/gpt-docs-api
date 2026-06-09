@@ -310,6 +310,40 @@ class AppAuthTests(unittest.TestCase):
             "context a\n\n---\n\ncontext b\n\n-----\n\nHow?",
         )
 
+    def test_make_query_truncates_overlong_metadata_text(self):
+        long_context = "x" * (self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH + 25)
+
+        class FakeIndex:
+            def query(self, *args, **kwargs):
+                return {
+                    "matches": [
+                        {
+                            "metadata": {
+                                "text": long_context,
+                                "url": "https://www.twilio.com/docs/long",
+                            }
+                        }
+                    ]
+                }
+
+        with patch.object(self.app_module, "get_embeddings", return_value=[0.1]):
+            with patch.object(self.app_module, "get_index", return_value=FakeIndex()):
+                with patch.object(
+                    self.app_module,
+                    "generate_response",
+                    return_value="answer",
+                ) as generate_response:
+                    response, links = self.app_module.make_query("How?")
+
+        self.assertEqual(response, "answer")
+        self.assertEqual(links, ["https://www.twilio.com/docs/long"])
+        generate_response.assert_called_once()
+        augmented_query = generate_response.call_args[0][0]
+        self.assertEqual(
+            augmented_query,
+            "x" * self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH + "\n\n-----\n\nHow?",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

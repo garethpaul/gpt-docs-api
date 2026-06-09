@@ -59,6 +59,7 @@ PUBLIC_CONTENT_TYPES = {
     '.png': 'image/png',
     '.svg': 'image/svg+xml',
 }
+MAX_RETRIEVAL_CONTEXT_LENGTH = 4000
 
 
 def safe_public_file_path(filename):
@@ -110,6 +111,8 @@ def metadata_text_and_url(item):
     context = text.strip()
     if not context:
         return None, None
+    if len(context) > MAX_RETRIEVAL_CONTEXT_LENGTH:
+        context = context[:MAX_RETRIEVAL_CONTEXT_LENGTH]
 
     url = metadata.get('url')
     if not isinstance(url, str):

@@ -65,6 +65,8 @@ the existing combined gate across tests, compile checks, and the source
 baseline.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
+The retrieval context length guard caps each accepted Pinecone metadata text
+chunk before generated-answer prompt assembly.
 Classification responses are constrained to the expected classification weight
 schema before `/classify/builder` returns model-produced JSON to callers.
 
@@ -97,6 +99,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `twilio.com` or `*.twilio.com` hosts instead of substring matches.
 - Keep the retrieval metadata guard in place so incomplete Pinecone match
   metadata is skipped before answer generation.
+- Keep the retrieval context length guard in place so oversized Pinecone
+  metadata cannot expand generated-answer prompts without bound.
 - Keep unexpected route failures logged server-side while callers receive
   generic 500 errors.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
@@ -122,6 +126,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   target guardrails.
 - See `docs/plans/2026-06-09-retrieval-metadata-guard.md` for the retrieval
   metadata guard.
+- See `docs/plans/2026-06-09-retrieval-context-length-guard.md` for the
+  retrieval context length guard.
 - See `docs/plans/2026-06-09-generic-error-responses.md` for generic 500
   errors on unexpected route failures.
 
