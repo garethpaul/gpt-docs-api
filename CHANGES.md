@@ -2,6 +2,9 @@
 
 ## 2026-06-09
 
+- Added `make lint` and `make build` aliases so local verification has the
+  expected pre-push gate targets alongside `make test`, `make check`, and
+  `make verify`.
 - Tightened request query validation so `/ask` and `/classify/builder` reject
   whitespace-only or non-string queries before OpenAI or Pinecone work starts.
 - Added a maximum query length guard before OpenAI, Pinecone, DynamoDB, or cache

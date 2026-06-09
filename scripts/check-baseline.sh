@@ -25,6 +25,7 @@ PUBLIC_PLAN="$ROOT_DIR/docs/plans/2026-06-08-public-file-boundary.md"
 QUERY_PLAN="$ROOT_DIR/docs/plans/2026-06-09-request-query-validation.md"
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-query-length-boundary.md"
 CLASSIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-09-classification-weight-schema.md"
+MAKE_GATES_PLAN="$ROOT_DIR/docs/plans/2026-06-09-make-gate-aliases.md"
 
 require_file() {
   path=$1
@@ -59,11 +60,12 @@ for path in \
   "docs/plans/2026-06-09-query-length-boundary.md" \
   "docs/plans/2026-06-09-request-query-validation.md" \
   "docs/plans/2026-06-09-classification-weight-schema.md" \
+  "docs/plans/2026-06-09-make-gate-aliases.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
 
-for target in "test:" "compile:" "check:" "verify: test compile check"; do
+for target in "lint:" "test:" "build: compile" "compile:" "check:" "verify: test compile check"; do
   if ! grep -Fq "$target" "$MAKEFILE"; then
     printf '%s\n' "Makefile must expose target: $target" >&2
     exit 1
@@ -191,6 +193,9 @@ if ! grep -Fq "FakeOpenAI" "$TEST_CLASSIFICATION" ||
 fi
 
 if ! grep -Fq "make verify" "$README" ||
+  ! grep -Fq "make lint" "$README" ||
+  ! grep -Fq "make test" "$README" ||
+  ! grep -Fq "make build" "$README" ||
   ! grep -Fq "CHANGES.md" "$README" ||
   ! grep -Fq "GPT_DOCS_API_KEY" "$README" ||
   ! grep -Fq "maximum query length" "$README" ||
@@ -204,6 +209,9 @@ if ! grep -Fq "make verify" "$README" ||
 fi
 
 if ! grep -Fq "Run \`make verify\`" "$VISION" ||
+  ! grep -Fq "make lint" "$VISION" ||
+  ! grep -Fq "make test" "$VISION" ||
+  ! grep -Fq "make build" "$VISION" ||
   ! grep -Fq "GPT_DOCS_API_KEY" "$VISION" ||
   ! grep -Fq "maximum query length" "$VISION" ||
   ! grep -Fq "public asset" "$VISION" ||
@@ -214,6 +222,9 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
 fi
 
 if ! grep -Fq "source baseline guard" "$CHANGES" ||
+  ! grep -Fq "make lint" "$CHANGES" ||
+  ! grep -Fq "make test" "$CHANGES" ||
+  ! grep -Fq "make build" "$CHANGES" ||
   ! grep -Fq "shared API-key guard" "$CHANGES" ||
   ! grep -Fq "public file path" "$CHANGES" ||
   ! grep -Fq "query validation" "$CHANGES" ||
@@ -231,6 +242,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$QUERY_PLAN" ||
   ! grep -Fq "status: completed" "$QUERY_LENGTH_PLAN" ||
   ! grep -Fq "status: completed" "$CLASSIFICATION_PLAN" ||
+  ! grep -Fq "status: completed" "$MAKE_GATES_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1

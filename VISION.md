@@ -39,7 +39,9 @@ Next priorities:
 Contribution rules:
 
 - One PR = one focused API, crawler, embedding, extension, or documentation change.
-- Run `make verify` before pushing code changes.
+- Run `make verify` before pushing code changes. The local gate also exposes
+  `make lint`, `make test`, `make build`, and `make check` for the standard
+  pre-push sequence.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger

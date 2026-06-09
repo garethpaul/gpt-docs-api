@@ -51,12 +51,18 @@ The setup commands above are derived from repository files. Legacy mobile, Pytho
 Run the local verification gate before changing the API, cache, or classification helpers:
 
 ```bash
+make lint
+make test
+make build
+make check
 make verify
 ```
 
-`make verify` runs deterministic unit tests without live OpenAI, Pinecone, AWS,
-or Twilio credentials, compiles the Chalice app and helper modules, and runs
-`scripts/check-baseline.sh` to protect dependency pins and source guardrails.
+`make lint` runs `scripts/check-baseline.sh`, `make test` runs deterministic
+unit tests without live OpenAI, Pinecone, AWS, or Twilio credentials, and
+`make build` compiles the Chalice app and helper modules. `make verify` keeps
+the existing combined gate across tests, compile checks, and the source
+baseline.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 Classification responses are constrained to the expected classification weight
@@ -108,6 +114,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   path boundary.
 - See `docs/plans/2026-06-09-query-length-boundary.md` for the maximum query
   length guard.
+- See `docs/plans/2026-06-09-make-gate-aliases.md` for local verification
+  target guardrails.
 
 ## Contributing
 
