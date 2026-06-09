@@ -25,6 +25,8 @@ Priority:
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
 - Preserve Twilio link host filtering for generated answer citations
 - Keep request validation bounded by a maximum query length before model work
+- Keep the classification weight schema explicit and numeric before returning
+  model output to callers
 - Keep unauthenticated public asset serving path-bound to checked-in assets
 
 Next priorities:
@@ -44,6 +46,7 @@ Contribution rules:
   route authorizer.
 - Keep Twilio link host filtering on generated answer links.
 - Keep the maximum query length guard in request validation.
+- Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
 
 ## Security And Accuracy

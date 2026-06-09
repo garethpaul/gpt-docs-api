@@ -24,6 +24,7 @@ AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-auth-guard.md"
 PUBLIC_PLAN="$ROOT_DIR/docs/plans/2026-06-08-public-file-boundary.md"
 QUERY_PLAN="$ROOT_DIR/docs/plans/2026-06-09-request-query-validation.md"
 QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-query-length-boundary.md"
+CLASSIFICATION_PLAN="$ROOT_DIR/docs/plans/2026-06-09-classification-weight-schema.md"
 
 require_file() {
   path=$1
@@ -57,6 +58,7 @@ for path in \
   "docs/plans/2026-06-08-source-baseline-guard.md" \
   "docs/plans/2026-06-09-query-length-boundary.md" \
   "docs/plans/2026-06-09-request-query-validation.md" \
+  "docs/plans/2026-06-09-classification-weight-schema.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -171,14 +173,20 @@ if ! grep -Fq 'validate_request_payload({"query": "   "})' "$TEST_UTILS" ||
 fi
 
 if ! grep -Fq "openai_client=openai" "$CLASSIFICATION" ||
+  ! grep -Fq "CLASSIFICATION_KEYS = (\"with_code\", \"minimal_code\", \"no_code\")" "$CLASSIFICATION" ||
+  ! grep -Fq "def validate_classification_weights" "$CLASSIFICATION" ||
+  ! grep -Fq "math.isfinite" "$CLASSIFICATION" ||
   ! grep -Fq "Failed to generate classification" "$CLASSIFICATION"; then
-  printf '%s\n' "Classification helpers must keep injectable OpenAI clients and wrapped errors." >&2
+  printf '%s\n' "Classification helpers must keep injectable OpenAI clients, schema validation, and wrapped errors." >&2
   exit 1
 fi
 
 if ! grep -Fq "FakeOpenAI" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "test_validate_classification_weights_requires_expected_keys" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "test_validate_classification_weights_rejects_invalid_values" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "test_generate_classification_wraps_malformed_weight_errors" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "extract_json_object_returns_empty_dict_without_stdout" "$TEST_UTILS"; then
-  printf '%s\n' "Tests must cover fake OpenAI clients and quiet JSON parse failures." >&2
+  printf '%s\n' "Tests must cover fake OpenAI clients, classification schemas, and quiet JSON parse failures." >&2
   exit 1
 fi
 
@@ -188,6 +196,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "maximum query length" "$README" ||
   ! grep -Fq "public asset routes" "$README" ||
   ! grep -Fq "Twilio link host filtering" "$README" ||
+  ! grep -Fq "classification weight schema" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
   ! grep -Fq "Pinecone" "$README"; then
   printf '%s\n' "README must document verification, changelog, and external service boundaries." >&2
@@ -198,7 +207,8 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "GPT_DOCS_API_KEY" "$VISION" ||
   ! grep -Fq "maximum query length" "$VISION" ||
   ! grep -Fq "public asset" "$VISION" ||
-  ! grep -Fq "Twilio link host filtering" "$VISION"; then
+  ! grep -Fq "Twilio link host filtering" "$VISION" ||
+  ! grep -Fq "classification weight schema" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
   exit 1
 fi
@@ -208,7 +218,8 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "public file path" "$CHANGES" ||
   ! grep -Fq "query validation" "$CHANGES" ||
   ! grep -Fq "maximum query length" "$CHANGES" ||
-  ! grep -Fq "Twilio link host filtering" "$CHANGES"; then
+  ! grep -Fq "Twilio link host filtering" "$CHANGES" ||
+  ! grep -Fq "classification weight schema" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
   exit 1
 fi
@@ -219,6 +230,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$PUBLIC_PLAN" ||
   ! grep -Fq "status: completed" "$QUERY_PLAN" ||
   ! grep -Fq "status: completed" "$QUERY_LENGTH_PLAN" ||
+  ! grep -Fq "status: completed" "$CLASSIFICATION_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1

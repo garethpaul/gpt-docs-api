@@ -1,8 +1,11 @@
 import openai
 import os
+import math
 from typing import List, Dict
 from chalicelib.config import OPENAI_API_KEY_ENV, EMBEDDING_MODEL, GPT_MODEL
 from chalicelib.utils import extract_json_object
+
+CLASSIFICATION_KEYS = ("with_code", "minimal_code", "no_code")
 
 
 def get_embeddings(query: str, openai_client=openai) -> List[float]:
@@ -33,6 +36,33 @@ def generate_response(query: str, openai_client=openai) -> str:
         ]
     )
     return open_res['choices'][0]['message']['content']
+
+
+def validate_classification_weights(weights: Dict[str, float]) -> Dict[str, float]:
+    """Validate and normalize classifier weights returned by the model."""
+    if not isinstance(weights, dict):
+        raise ValueError("Classification response must be a JSON object")
+
+    if set(weights.keys()) != set(CLASSIFICATION_KEYS):
+        raise ValueError(
+            "Classification response must include with_code, minimal_code, and no_code"
+        )
+
+    validated = {}
+    for key in CLASSIFICATION_KEYS:
+        value = weights[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError("Classification weights must be finite numbers")
+
+        weight = float(value)
+        if not math.isfinite(weight):
+            raise ValueError("Classification weights must be finite numbers")
+        if weight < 0 or weight > 1:
+            raise ValueError("Classification weights must be between 0 and 1")
+
+        validated[key] = weight
+
+    return validated
 
 
 def generate_classification(model: str,
@@ -69,6 +99,6 @@ def generate_classification(model: str,
             ]
         )
         api_resp = response['choices'][0]['message']['content']
-        return extract_json_object(api_resp)
+        return validate_classification_weights(extract_json_object(api_resp))
     except Exception as error:
         raise Exception(f"Failed to generate classification: {str(error)}")

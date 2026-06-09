@@ -6,6 +6,7 @@ from chalicelib.classification import (
     generate_classification,
     generate_response,
     get_embeddings,
+    validate_classification_weights,
 )
 from chalicelib.config import EMBEDDING_MODEL, GPT_MODEL, OPENAI_API_KEY_ENV
 
@@ -98,7 +99,10 @@ class ClassificationTests(unittest.TestCase):
             "choices": [
                 {
                     "message": {
-                        "content": '{"with_code": 0.8, "no_code": 0.2}',
+                        "content": (
+                            '{"with_code": 0.8, "minimal_code": 0.1, '
+                            '"no_code": 0.2}'
+                        ),
                     }
                 }
             ]
@@ -110,8 +114,50 @@ class ClassificationTests(unittest.TestCase):
             openai_client=FakeOpenAI,
         )
 
-        self.assertEqual(result, {"with_code": 0.8, "no_code": 0.2})
+        self.assertEqual(
+            result,
+            {"with_code": 0.8, "minimal_code": 0.1, "no_code": 0.2},
+        )
         self.assertEqual(FakeChatCompletion.calls[0]["model"], "gpt-test")
+
+    def test_validate_classification_weights_requires_expected_keys(self):
+        with self.assertRaisesRegex(ValueError, "must include"):
+            validate_classification_weights({"with_code": 0.8, "no_code": 0.2})
+
+    def test_validate_classification_weights_rejects_invalid_values(self):
+        invalid_values = [
+            {"with_code": 0.8, "minimal_code": 0.1, "no_code": "0.2"},
+            {"with_code": 0.8, "minimal_code": 0.1, "no_code": True},
+            {"with_code": 0.8, "minimal_code": 0.1, "no_code": float("nan")},
+            {"with_code": 0.8, "minimal_code": 0.1, "no_code": 1.1},
+            {"with_code": 0.8, "minimal_code": 0.1, "no_code": -0.1},
+        ]
+
+        for weights in invalid_values:
+            with self.subTest(weights=weights):
+                with self.assertRaises(ValueError):
+                    validate_classification_weights(weights)
+
+    def test_generate_classification_wraps_malformed_weight_errors(self):
+        FakeChatCompletion.response = {
+            "choices": [
+                {
+                    "message": {
+                        "content": '{"with_code": 0.8, "no_code": 0.2}',
+                    }
+                }
+            ]
+        }
+
+        with self.assertRaisesRegex(
+            Exception,
+            "Failed to generate classification: Classification response must include",
+        ):
+            generate_classification(
+                "gpt-test",
+                "How do I build this?",
+                openai_client=FakeOpenAI,
+            )
 
     def test_generate_classification_wraps_openai_errors(self):
         with self.assertRaisesRegex(
