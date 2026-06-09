@@ -280,9 +280,10 @@ def ask_question():
                         'links': links}, status_code=200)
         return resp
 
-    except Exception as error:
+    except Exception:
         # Handle any unexpected errors
-        return Response(body={'error': str(error)}, status_code=500)
+        logger.exception('Failed to process ask request')
+        return Response(body={'error': 'Internal server error'}, status_code=500)
 
 
 @app.route('/hello', methods=['GET'], cors=cors_config)
@@ -323,6 +324,7 @@ def classify_builder():
         resp = Response(body={'weights': classifier}, status_code=200)
         return resp
 
-    except Exception as error:
+    except Exception:
         # Handle any unexpected errors
-        return Response(body={'error': str(error)}, status_code=500)
+        logger.exception('Failed to process classify request')
+        return Response(body={'error': 'Internal server error'}, status_code=500)

@@ -97,6 +97,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `twilio.com` or `*.twilio.com` hosts instead of substring matches.
 - Keep the retrieval metadata guard in place so incomplete Pinecone match
   metadata is skipped before answer generation.
+- Keep unexpected route failures logged server-side while callers receive
+  generic 500 errors.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
 - Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.
@@ -120,6 +122,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   target guardrails.
 - See `docs/plans/2026-06-09-retrieval-metadata-guard.md` for the retrieval
   metadata guard.
+- See `docs/plans/2026-06-09-generic-error-responses.md` for generic 500
+  errors on unexpected route failures.
 
 ## Contributing
 

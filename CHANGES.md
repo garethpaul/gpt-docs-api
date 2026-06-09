@@ -2,6 +2,8 @@
 
 ## 2026-06-09
 
+- Returned generic 500 errors for unexpected `/ask` and `/classify/builder`
+  failures while logging server-side details.
 - Added `make lint` and `make build` aliases so local verification has the
   expected pre-push gate targets alongside `make test`, `make check`, and
   `make verify`.

@@ -129,6 +129,27 @@ class AppAuthTests(unittest.TestCase):
         make_query.assert_called_once_with("How?")
         cache.assert_called_once_with("How?", "answer", ["https://twilio.com/docs"])
 
+    def test_ask_returns_generic_error_for_unexpected_failures(self):
+        request = FakeRequest(
+            headers={GPT_DOCS_API_KEY_HEADER: "server-key"},
+            json_body={"query": "How?"},
+        )
+        self.app_module.app.current_request = request
+
+        with patch.dict(os.environ, {GPT_DOCS_API_KEY_ENV: "server-key"}):
+            with patch.object(self.app_module, "get_cached_response", return_value=None):
+                with patch.object(
+                    self.app_module,
+                    "make_query",
+                    side_effect=RuntimeError("upstream failure detail"),
+                ):
+                    with patch.object(self.app_module.logger, "exception") as log:
+                        response = self.app_module.ask_question()
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.body, {"error": "Internal server error"})
+        log.assert_called_once_with("Failed to process ask request")
+
     def test_classify_rejects_unauthenticated_callers_before_body_or_model_work(self):
         request = FakeRequest(headers={}, json_body={"query": "How?"})
         self.app_module.app.current_request = request
@@ -142,6 +163,26 @@ class AppAuthTests(unittest.TestCase):
         self.assertEqual(response.body, {"error": "Unauthorized"})
         self.assertEqual(request.json_body_accesses, 0)
         classifier.assert_not_called()
+
+    def test_classify_returns_generic_error_for_unexpected_failures(self):
+        request = FakeRequest(
+            headers={GPT_DOCS_API_KEY_HEADER: "server-key"},
+            json_body={"query": "How?"},
+        )
+        self.app_module.app.current_request = request
+
+        with patch.dict(os.environ, {GPT_DOCS_API_KEY_ENV: "server-key"}):
+            with patch.object(
+                self.app_module,
+                "generate_classification",
+                side_effect=RuntimeError("classifier failure detail"),
+            ):
+                with patch.object(self.app_module.logger, "exception") as log:
+                    response = self.app_module.classify_builder()
+
+        self.assertEqual(response.status_code, 500)
+        self.assertEqual(response.body, {"error": "Internal server error"})
+        log.assert_called_once_with("Failed to process classify request")
 
     def test_serve_public_returns_known_asset_with_content_type(self):
         response = self.app_module.serve_public("test.html")

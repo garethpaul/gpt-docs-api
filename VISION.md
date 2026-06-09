@@ -25,6 +25,7 @@ Priority:
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
 - Preserve Twilio link host filtering for generated answer citations
 - Preserve the retrieval metadata guard before answer generation
+- Keep unexpected route failures behind generic 500 errors
 - Keep request validation bounded by a maximum query length before model work
 - Keep the classification weight schema explicit and numeric before returning
   model output to callers
@@ -50,6 +51,8 @@ Contribution rules:
 - Keep Twilio link host filtering on generated answer links.
 - Keep the retrieval metadata guard on Pinecone matches before answer
   generation.
+- Keep unexpected route failures logged server-side while returning generic 500
+  errors to callers.
 - Keep the maximum query length guard in request validation.
 - Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
