@@ -4,6 +4,8 @@
 
 - Tightened request query validation so `/ask` and `/classify/builder` reject
   whitespace-only or non-string queries before OpenAI or Pinecone work starts.
+- Added Twilio link host filtering so generated answer links must use HTTPS
+  `twilio.com` or `*.twilio.com` hosts.
 
 ## 2026-06-08
 

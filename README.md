@@ -79,6 +79,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   a stronger API Gateway/JWT authorizer. Public asset routes may remain
   unauthenticated, but public asset routes must stay path-bound to
   `api/chalicelib/public`.
+- Twilio link host filtering keeps generated answer links limited to HTTPS
+  `twilio.com` or `*.twilio.com` hosts instead of substring matches.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
 - Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.

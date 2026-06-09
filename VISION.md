@@ -23,6 +23,7 @@ Priority:
 - Keep OpenAI, Pinecone, and AWS credentials out of git
 - Maintain the disclaimer and public-docs scope
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
+- Preserve Twilio link host filtering for generated answer citations
 - Keep unauthenticated public asset serving path-bound to checked-in assets
 
 Next priorities:
@@ -40,6 +41,7 @@ Contribution rules:
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger
   route authorizer.
+- Keep Twilio link host filtering on generated answer links.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
 
 ## Security And Accuracy

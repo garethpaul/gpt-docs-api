@@ -163,6 +163,71 @@ class AppAuthTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.body, {"error": "Invalid public file path"})
 
+    def test_is_twilio_doc_url_requires_https_twilio_host(self):
+        self.assertTrue(
+            self.app_module.is_twilio_doc_url("https://www.twilio.com/docs/sms")
+        )
+        self.assertTrue(
+            self.app_module.is_twilio_doc_url("https://docs.twilio.com/reference")
+        )
+        self.assertFalse(
+            self.app_module.is_twilio_doc_url("http://www.twilio.com/docs/sms")
+        )
+        self.assertFalse(
+            self.app_module.is_twilio_doc_url("https://example.com/?next=twilio.com")
+        )
+        self.assertFalse(self.app_module.is_twilio_doc_url(None))
+
+    def test_make_query_filters_links_by_twilio_host(self):
+        class FakeIndex:
+            def query(self, *args, **kwargs):
+                return {
+                    "matches": [
+                        {
+                            "metadata": {
+                                "text": "context a",
+                                "url": "https://www.twilio.com/docs/b",
+                            }
+                        },
+                        {
+                            "metadata": {
+                                "text": "context b",
+                                "url": "https://example.com/?next=twilio.com",
+                            }
+                        },
+                        {
+                            "metadata": {
+                                "text": "context c",
+                                "url": "http://www.twilio.com/docs/a",
+                            }
+                        },
+                        {
+                            "metadata": {
+                                "text": "context d",
+                                "url": "https://docs.twilio.com/reference",
+                            }
+                        },
+                    ]
+                }
+
+        with patch.object(self.app_module, "get_embeddings", return_value=[0.1]):
+            with patch.object(self.app_module, "get_index", return_value=FakeIndex()):
+                with patch.object(
+                    self.app_module,
+                    "generate_response",
+                    return_value="answer",
+                ):
+                    response, links = self.app_module.make_query("How?")
+
+        self.assertEqual(response, "answer")
+        self.assertEqual(
+            links,
+            [
+                "https://docs.twilio.com/reference",
+                "https://www.twilio.com/docs/b",
+            ],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

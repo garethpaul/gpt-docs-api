@@ -6,6 +6,7 @@ import pinecone
 import os
 from chalice import Chalice, Response, CORSConfig
 from typing import Tuple, List
+from urllib.parse import urlparse
 from chalicelib.auth import (
     AuthenticationConfigurationError,
     AuthenticationError,
@@ -80,6 +81,18 @@ def public_content_type(file_path):
     """Return the response content type for a public asset."""
     _, extension = os.path.splitext(file_path)
     return PUBLIC_CONTENT_TYPES.get(extension.lower(), 'application/octet-stream')
+
+
+def is_twilio_doc_url(url):
+    """Return True for HTTPS Twilio-hosted documentation links."""
+    try:
+        parsed = urlparse(url)
+    except (TypeError, ValueError):
+        return False
+    hostname = parsed.hostname or ''
+    return parsed.scheme == 'https' and (
+        hostname == 'twilio.com' or hostname.endswith('.twilio.com')
+    )
 
 
 @app.route('/public/{filename}', methods=['GET'])
@@ -181,9 +194,8 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     # Generate response
     response = generate_response(augmented_query)
 
-    # Remove duplicate URLs and anything that does not contain 'twilio.com'
-    urls = list(set(urls))
-    urls = [url for url in urls if 'twilio.com' in url]
+    # Remove duplicate URLs and anything outside HTTPS Twilio-owned hosts.
+    urls = sorted({url for url in urls if is_twilio_doc_url(url)})
 
     return response, urls
 
