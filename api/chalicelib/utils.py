@@ -2,6 +2,9 @@ from typing import Dict
 import json
 
 
+MAX_QUERY_LENGTH = 4000
+
+
 def validate_request_payload(request_json) -> str:
     """
     Validate the request payload and extract the query.
@@ -16,6 +19,8 @@ def validate_request_payload(request_json) -> str:
     query = query.strip()
     if not query:
         raise ValueError('Missing "query" key in request body')
+    if len(query) > MAX_QUERY_LENGTH:
+        raise ValueError('Query is too long')
     return query
 
 

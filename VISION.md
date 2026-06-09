@@ -24,6 +24,7 @@ Priority:
 - Maintain the disclaimer and public-docs scope
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
 - Preserve Twilio link host filtering for generated answer citations
+- Keep request validation bounded by a maximum query length before model work
 - Keep unauthenticated public asset serving path-bound to checked-in assets
 
 Next priorities:
@@ -42,6 +43,7 @@ Contribution rules:
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger
   route authorizer.
 - Keep Twilio link host filtering on generated answer links.
+- Keep the maximum query length guard in request validation.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
 
 ## Security And Accuracy

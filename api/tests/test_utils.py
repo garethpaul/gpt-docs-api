@@ -2,7 +2,11 @@ import io
 import unittest
 from contextlib import redirect_stdout
 
-from chalicelib.utils import extract_json_object, validate_request_payload
+from chalicelib.utils import (
+    MAX_QUERY_LENGTH,
+    extract_json_object,
+    validate_request_payload,
+)
 
 
 class UtilsTests(unittest.TestCase):
@@ -22,6 +26,15 @@ class UtilsTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, 'Query must be a string'):
             validate_request_payload({"query": ["not", "text"]})
+
+    def test_validate_request_payload_rejects_overlong_query(self):
+        with self.assertRaisesRegex(ValueError, 'Query is too long'):
+            validate_request_payload({"query": "x" * (MAX_QUERY_LENGTH + 1)})
+
+    def test_validate_request_payload_accepts_maximum_length_query(self):
+        query = "x" * MAX_QUERY_LENGTH
+
+        self.assertEqual(validate_request_payload({"query": query}), query)
 
     def test_validate_request_payload_returns_query(self):
         self.assertEqual(

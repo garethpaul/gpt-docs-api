@@ -23,6 +23,7 @@ CHECK_PLAN="$ROOT_DIR/docs/plans/2026-06-08-source-baseline-guard.md"
 AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-auth-guard.md"
 PUBLIC_PLAN="$ROOT_DIR/docs/plans/2026-06-08-public-file-boundary.md"
 QUERY_PLAN="$ROOT_DIR/docs/plans/2026-06-09-request-query-validation.md"
+QUERY_LENGTH_PLAN="$ROOT_DIR/docs/plans/2026-06-09-query-length-boundary.md"
 
 require_file() {
   path=$1
@@ -54,6 +55,7 @@ for path in \
   "docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md" \
   "docs/plans/2026-06-08-public-file-boundary.md" \
   "docs/plans/2026-06-08-source-baseline-guard.md" \
+  "docs/plans/2026-06-09-query-length-boundary.md" \
   "docs/plans/2026-06-09-request-query-validation.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -152,13 +154,18 @@ fi
 if ! grep -Fq "ValueError('Request body must be JSON')" "$UTILS" ||
   ! grep -Fq "json.JSONDecodeError" "$UTILS" ||
   ! grep -Fq "ValueError('Query must be a string')" "$UTILS" ||
-  ! grep -Fq "query = query.strip()" "$UTILS"; then
+  ! grep -Fq "query = query.strip()" "$UTILS" ||
+  ! grep -Fq "MAX_QUERY_LENGTH = 4000" "$UTILS" ||
+  ! grep -Fq "ValueError('Query is too long')" "$UTILS"; then
   printf '%s\n' "Utility helpers must preserve request and JSON parsing errors." >&2
   exit 1
 fi
 
 if ! grep -Fq 'validate_request_payload({"query": "   "})' "$TEST_UTILS" ||
-  ! grep -Fq "Query must be a string" "$TEST_UTILS"; then
+  ! grep -Fq "Query must be a string" "$TEST_UTILS" ||
+  ! grep -Fq "test_validate_request_payload_rejects_overlong_query" "$TEST_UTILS" ||
+  ! grep -Fq "test_validate_request_payload_accepts_maximum_length_query" "$TEST_UTILS" ||
+  ! grep -Fq "MAX_QUERY_LENGTH + 1" "$TEST_UTILS"; then
   printf '%s\n' "Utility tests must cover whitespace and non-string queries." >&2
   exit 1
 fi
@@ -178,6 +185,7 @@ fi
 if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "CHANGES.md" "$README" ||
   ! grep -Fq "GPT_DOCS_API_KEY" "$README" ||
+  ! grep -Fq "maximum query length" "$README" ||
   ! grep -Fq "public asset routes" "$README" ||
   ! grep -Fq "Twilio link host filtering" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
@@ -188,6 +196,7 @@ fi
 
 if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "GPT_DOCS_API_KEY" "$VISION" ||
+  ! grep -Fq "maximum query length" "$VISION" ||
   ! grep -Fq "public asset" "$VISION" ||
   ! grep -Fq "Twilio link host filtering" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
@@ -198,6 +207,7 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "shared API-key guard" "$CHANGES" ||
   ! grep -Fq "public file path" "$CHANGES" ||
   ! grep -Fq "query validation" "$CHANGES" ||
+  ! grep -Fq "maximum query length" "$CHANGES" ||
   ! grep -Fq "Twilio link host filtering" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
   exit 1
@@ -208,6 +218,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$AUTH_PLAN" ||
   ! grep -Fq "status: completed" "$PUBLIC_PLAN" ||
   ! grep -Fq "status: completed" "$QUERY_PLAN" ||
+  ! grep -Fq "status: completed" "$QUERY_LENGTH_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1

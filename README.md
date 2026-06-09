@@ -57,6 +57,8 @@ make verify
 `make verify` runs deterministic unit tests without live OpenAI, Pinecone, AWS,
 or Twilio credentials, compiles the Chalice app and helper modules, and runs
 `scripts/check-baseline.sh` to protect dependency pins and source guardrails.
+Request validation rejects missing, non-string, whitespace-only, and over the
+maximum query length values before model or retrieval work starts.
 
 When the required SDK or runtime is unavailable, use static checks and source review first, then verify on a machine that has the matching platform toolchain.
 
@@ -79,6 +81,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   a stronger API Gateway/JWT authorizer. Public asset routes may remain
   unauthenticated, but public asset routes must stay path-bound to
   `api/chalicelib/public`.
+- Keep request query validation bounded by a maximum query length before routes
+  invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
 - Twilio link host filtering keeps generated answer links limited to HTTPS
   `twilio.com` or `*.twilio.com` hosts instead of substring matches.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
@@ -98,6 +102,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   authentication guard.
 - See `docs/plans/2026-06-08-public-file-boundary.md` for the public asset
   path boundary.
+- See `docs/plans/2026-06-09-query-length-boundary.md` for the maximum query
+  length guard.
 
 ## Contributing
 
