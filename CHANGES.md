@@ -1,5 +1,11 @@
 # Changes
 
+## 2026-06-10
+
+- Added a pinned, least-privilege Python 3.10 GitHub Actions workflow that
+  verifies dependency consistency and runs the no-live-credentials
+  auth/retrieval baseline.
+
 ## 2026-06-09
 
 - Returned generic 500 errors for unexpected `/ask` and `/classify/builder`

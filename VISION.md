@@ -44,7 +44,8 @@ Contribution rules:
 - One PR = one focused API, crawler, embedding, extension, or documentation change.
 - Run `make verify` before pushing code changes. The local gate also exposes
   `make lint`, `make test`, `make build`, and `make check` for the standard
-  pre-push sequence.
+  pre-push sequence. GitHub Actions verifies the pinned Python 3.10 dependency
+  set and runs the no-live-credentials baseline.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger
@@ -59,6 +60,7 @@ Contribution rules:
 - Keep the maximum query length guard in request validation.
 - Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
+- Keep GitHub Actions aligned with the no-live-credentials local gate.
 
 ## Security And Accuracy
 
