@@ -39,11 +39,15 @@ class CacheTests(unittest.TestCase):
     def test_get_cached_response_returns_item(self):
         from chalicelib.cache import get_cached_response
 
-        table = FakeTable(item={"response": "answer", "links": ["url"]})
+        table = FakeTable(item={
+            "response": "answer",
+            "links": ["url"],
+            "expires_at": 200,
+        })
 
         self.assertEqual(
-            get_cached_response("hello", table=table),
-            {"response": "answer", "links": ["url"]},
+            get_cached_response("hello", table=table, now=100),
+            {"response": "answer", "links": ["url"], "expires_at": 200},
         )
         self.assertEqual(
             table.get_item_calls,
@@ -55,12 +59,22 @@ class CacheTests(unittest.TestCase):
 
         self.assertIsNone(get_cached_response("missing", table=FakeTable()))
 
+    def test_get_cached_response_rejects_expired_or_missing_expiry(self):
+        from chalicelib.cache import get_cached_response
+
+        expired = FakeTable(item={"response": "old", "expires_at": 100})
+        missing_expiry = FakeTable(item={"response": "old"})
+
+        self.assertIsNone(get_cached_response("expired", table=expired, now=100))
+        self.assertIsNone(get_cached_response("legacy", table=missing_expiry, now=100))
+
     def test_store_in_cache_writes_existing_item_shape(self):
         from chalicelib.cache import store_in_cache
 
         table = FakeTable()
 
-        store_in_cache("hello", "answer", ["url"], table=table)
+        store_in_cache("hello", "answer", ["url"], table=table,
+                       now=100, ttl_seconds=60)
 
         self.assertEqual(
             table.put_item_calls,
@@ -70,10 +84,20 @@ class CacheTests(unittest.TestCase):
                         "query_string": "hello",
                         "response": "answer",
                         "links": ["url"],
+                        "expires_at": 160,
                     }
                 }
             ],
         )
+
+    def test_store_in_cache_rejects_invalid_ttl(self):
+        from chalicelib.cache import store_in_cache
+
+        for ttl_seconds in (0, -1, True, "60"):
+            with self.subTest(ttl_seconds=ttl_seconds):
+                with self.assertRaises(ValueError):
+                    store_in_cache("hello", "answer", [], table=FakeTable(),
+                                   now=100, ttl_seconds=ttl_seconds)
 
     def test_get_cache_table_uses_configured_table_name(self):
         from chalicelib.cache import get_cache_table

@@ -2,6 +2,8 @@
 
 ## 2026-06-10
 
+- Added one-day expiration to generated-answer cache entries, rejected stale or
+  legacy cache entries without `expires_at`, and emitted DynamoDB TTL metadata.
 - Added a pinned, least-privilege Python 3.10 GitHub Actions workflow that
   verifies dependency consistency and runs the no-live-credentials
   auth/retrieval baseline.

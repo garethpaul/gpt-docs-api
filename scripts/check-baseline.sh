@@ -31,6 +31,7 @@ GENERIC_ERROR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-generic-error-responses.md"
 RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-retrieval-context-length-guard.md"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
+CACHE_EXPIRATION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-cache-expiration-boundary.md"
 
 require_file() {
   path=$1
@@ -71,6 +72,7 @@ for path in \
   "docs/plans/2026-06-09-generic-error-responses.md" \
   "docs/plans/2026-06-09-retrieval-context-length-guard.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
+  "docs/plans/2026-06-10-cache-expiration-boundary.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -108,7 +110,8 @@ if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   exit 1
 fi
 
-if ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
+if ! grep -Fq "CACHE_TTL_SECONDS = 86400" "$CONFIG" ||
+  ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
   ! grep -Fq "GPT_DOCS_API_KEY_HEADER = 'X-GPT-Docs-API-Key'" "$CONFIG"; then
   printf '%s\n' "Config must declare the caller auth environment variable and header." >&2
   exit 1
@@ -186,13 +189,18 @@ if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_wor
 fi
 
 if ! grep -Fq "def get_cache_table(resource=None)" "$CACHE" ||
-  ! grep -Fq "def get_cached_response(query, table=None)" "$CACHE" ||
-  ! grep -Fq "def store_in_cache(query, response, links, table=None)" "$CACHE"; then
+  ! grep -Fq "def get_cached_response(query, table=None, now=None)" "$CACHE" ||
+  ! grep -Fq "def store_in_cache(query, response, links, table=None, now=None," "$CACHE" ||
+  ! grep -Fq "expires_at <= current_time" "$CACHE" ||
+  ! grep -Fq "'expires_at': current_time + ttl_seconds" "$CACHE"; then
   printf '%s\n' "Cache helpers must remain injectable for no-credential tests." >&2
   exit 1
 fi
 
-if ! grep -Fq "test_import_does_not_create_dynamodb_resource" "$TEST_CACHE"; then
+if ! grep -Fq "test_import_does_not_create_dynamodb_resource" "$TEST_CACHE" ||
+  ! grep -Fq "test_get_cached_response_rejects_expired_or_missing_expiry" "$TEST_CACHE" ||
+  ! grep -Fq "test_store_in_cache_rejects_invalid_ttl" "$TEST_CACHE" ||
+  ! grep -Fq '"expires_at": 160' "$TEST_CACHE"; then
   printf '%s\n' "Cache tests must cover import safety without DynamoDB resources." >&2
   exit 1
 fi
@@ -251,6 +259,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "Twilio link host filtering" "$README" ||
   ! grep -Fq "retrieval metadata guard" "$README" ||
   ! grep -Fq "retrieval context length" "$README" ||
+  ! grep -Fq "expires_at" "$README" ||
   ! grep -Fq "generic 500 errors" "$README" ||
   ! grep -Fq "classification weight schema" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
@@ -270,6 +279,7 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "Twilio link host filtering" "$VISION" ||
   ! grep -Fq "retrieval metadata guard" "$VISION" ||
   ! grep -Fq "retrieval context length" "$VISION" ||
+  ! grep -Fq "cache expiration" "$VISION" ||
   ! grep -Fq "generic 500 errors" "$VISION" ||
   ! grep -Fq "classification weight schema" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
@@ -288,6 +298,7 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "Twilio link host filtering" "$CHANGES" ||
   ! grep -Fq "retrieval metadata guard" "$CHANGES" ||
   ! grep -Fq "retrieval context length" "$CHANGES" ||
+  ! grep -Fq "cache entries" "$CHANGES" ||
   ! grep -Fq "generic 500 errors" "$CHANGES" ||
   ! grep -Fq "classification weight schema" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
@@ -306,8 +317,14 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$GENERIC_ERROR_PLAN" ||
   ! grep -Fq "status: completed" "$RETRIEVAL_CONTEXT_PLAN" ||
   ! grep -Fq "status: completed" "$CI_PLAN" ||
+  ! grep -Fq "status: completed" "$CACHE_EXPIRATION_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Mutations accepting expired entries or omitting written TTLs must fail" "$CACHE_EXPIRATION_PLAN"; then
+  printf '%s\n' "Cache expiration plan must record completed mutation verification." >&2
   exit 1
 fi
 

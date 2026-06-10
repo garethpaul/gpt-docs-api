@@ -95,6 +95,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `api/chalicelib/public`.
 - Keep request query validation bounded by a maximum query length before routes
   invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
+- DynamoDB cache entries expire after one day in application reads and include
+  an integer `expires_at` epoch attribute for DynamoDB TTL cleanup.
 - Keep the classification weight schema limited to numeric `with_code`,
   `minimal_code`, and `no_code` values.
 - Twilio link host filtering keeps generated answer links limited to HTTPS
@@ -133,6 +135,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-generic-error-responses.md` for generic 500
   errors on unexpected route failures.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the GitHub Actions baseline.
+- See `docs/plans/2026-06-10-cache-expiration-boundary.md` for cache freshness
+  and DynamoDB TTL behavior.
 
 ## Contributing
 

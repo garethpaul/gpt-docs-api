@@ -26,6 +26,7 @@ Priority:
 - Preserve Twilio link host filtering for generated answer citations
 - Preserve the retrieval metadata guard before answer generation
 - Preserve the retrieval context length guard before prompt assembly
+- Preserve one-day cache expiration and the DynamoDB `expires_at` TTL attribute
 - Keep unexpected route failures behind generic 500 errors
 - Keep request validation bounded by a maximum query length before model work
 - Keep the classification weight schema explicit and numeric before returning
@@ -55,6 +56,7 @@ Contribution rules:
   generation.
 - Keep the retrieval context length guard on accepted Pinecone metadata before
   prompt assembly.
+- Keep cache expiration enforced before returning generated-answer entries.
 - Keep unexpected route failures logged server-side while returning generic 500
   errors to callers.
 - Keep the maximum query length guard in request validation.

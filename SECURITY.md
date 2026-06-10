@@ -44,6 +44,8 @@ For AI-generated responses, validate model output schemas before exposing values
 
 Retrieved document context should stay bounded before it is assembled into
 generated-answer prompts.
+Generated-answer cache entries should carry a bounded `expires_at` lifetime;
+enable DynamoDB TTL on that attribute so stale query data is physically removed.
 
 Unexpected API route failures should return generic 500 errors to callers and
 keep detailed exception text in server logs.
