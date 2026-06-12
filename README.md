@@ -64,7 +64,8 @@ unit tests without live OpenAI, Pinecone, AWS, or Twilio credentials, and
 the existing combined gate across tests, compile checks, and the source
 baseline.
 GitHub Actions installs the pinned API requirements on Python 3.10, verifies
-dependency consistency, and runs the same offline `make check` baseline.
+dependency consistency, checks out without persisting the workflow token, and
+runs the same offline `make check` baseline.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 The retrieval context length guard caps each accepted Pinecone metadata text

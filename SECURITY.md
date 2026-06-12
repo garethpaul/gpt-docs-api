@@ -54,8 +54,7 @@ Unexpected API route failures should return generic 500 errors to callers and
 keep detailed exception text in server logs.
 
 GitHub Actions uses read-only repository permissions, verifies the pinned
-dependency set, and runs the no-live-credentials auth/retrieval baseline. Do
-not add deployment or live service steps without a separate security review.
+Checkout does not persist the workflow token into local Git configuration.
 
 ## Dependency and Supply Chain Security
 

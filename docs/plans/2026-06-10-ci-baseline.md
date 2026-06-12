@@ -14,6 +14,10 @@ that runs the same baseline on pushes and pull requests.
   and manual runs.
 - Pinned checkout and Python setup by commit and bounded superseded runs with
   cancellation and a timeout.
+- Disabled persisted checkout credentials so later steps cannot reuse the
+  workflow token through local Git configuration.
+- Extended the dependency-free baseline to reject missing, duplicate,
+  relocated, or contradictory checkout credential settings.
 - Installed the checked-in `api/requirements.txt` pins on Python 3.10 and ran
   `pip check` before the repository baseline.
 - Ran `make check` as the hosted baseline, matching local verification.

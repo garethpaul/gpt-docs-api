@@ -13,7 +13,8 @@
   legacy cache entries without `expires_at`, and emitted DynamoDB TTL metadata.
 - Added a pinned, least-privilege Python 3.10 GitHub Actions workflow that
   verifies dependency consistency and runs the no-live-credentials
-  auth/retrieval baseline.
+  auth/retrieval baseline without persisting checkout credentials; the local
+  baseline rejects missing, duplicate, relocated, or contradictory settings.
 
 ## 2026-06-09
 

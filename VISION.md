@@ -48,7 +48,8 @@ Contribution rules:
 - Run `make verify` before pushing code changes. The local gate also exposes
   `make lint`, `make test`, `make build`, and `make check` for the standard
   pre-push sequence. GitHub Actions verifies the pinned Python 3.10 dependency
-  set and runs the no-live-credentials baseline.
+  set and runs the no-live-credentials baseline without persisted checkout
+  credentials.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger

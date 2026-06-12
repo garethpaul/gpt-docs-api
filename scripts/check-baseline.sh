@@ -97,12 +97,35 @@ for requirement in \
   fi
 done
 
+checkout_credential_contract=$(
+  awk '
+    /uses: actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10/ {
+      in_checkout = 1
+      next
+    }
+    in_checkout && /^[[:space:]]+- name:/ {
+      in_checkout = 0
+    }
+    in_checkout && /persist-credentials:/ {
+      count += 1
+      if ($0 ~ /^[[:space:]]+persist-credentials: false[[:space:]]*$/) {
+        valid += 1
+      }
+    }
+    END {
+      printf "%d:%d\n", count, valid
+    }
+  ' "$CI_WORKFLOW"
+)
+
 if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   ! grep -Fq "contents: read" "$CI_WORKFLOW" ||
   ! grep -Fq "cancel-in-progress: true" "$CI_WORKFLOW" ||
   ! grep -Fq "runs-on: ubuntu-24.04" "$CI_WORKFLOW" ||
   ! grep -Fq "timeout-minutes: 15" "$CI_WORKFLOW" ||
   ! grep -Fq "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$CI_WORKFLOW" ||
+  ! grep -Fq "# v6.0.3" "$CI_WORKFLOW" ||
+  [ "$checkout_credential_contract" != "1:1" ] ||
   ! grep -Fq "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" "$CI_WORKFLOW" ||
   ! grep -Fq 'python-version: "3.10"' "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
@@ -354,7 +377,6 @@ if ! grep -Fq "GitHub Actions" "$CI_PLAN" ||
   printf '%s\n' "CI baseline plan must record hosted make check verification." >&2
   exit 1
 fi
-
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 
