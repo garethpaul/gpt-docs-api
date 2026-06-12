@@ -53,6 +53,11 @@ limits and reducing plaintext exposure in storage diagnostics.
 Unexpected API route failures should return generic 500 errors to callers and
 keep detailed exception text in server logs.
 
+The browser extension runs inside third-party documentation pages. Treat user
+queries, generated answers, and source labels as untrusted text, never markup.
+Parse source URLs before assigning `href`, allow only HTTP(S), and isolate new
+tabs with `noopener noreferrer`.
+
 GitHub Actions uses read-only repository permissions, verifies the pinned
 Checkout does not persist the workflow token into local Git configuration.
 

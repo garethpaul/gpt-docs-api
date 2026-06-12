@@ -39,7 +39,8 @@ Next priorities:
 
 - Improve evaluation of answer quality and citation grounding
 - Modernize OpenAI and Pinecone clients in a dedicated pass
-- Keep Chrome extension behavior aligned with API changes
+- Keep Chrome extension behavior aligned with API changes while preserving
+  text-only extension rendering and HTTP(S)-only source links
 - Document crawler scope and robots.txt/respectful access behavior
 
 Contribution rules:
@@ -68,6 +69,8 @@ Contribution rules:
 - Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
 - Keep GitHub Actions aligned with the no-live-credentials local gate.
+- Keep the text-only extension rendering guard in the canonical local and
+  hosted baseline.
 
 ## Security And Accuracy
 

@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Replaced extension `innerHTML` sinks with text-only DOM rendering, restricted
+  source links to HTTP(S), isolated new tabs, and added canonical regressions.
 - Replaced raw DynamoDB query partition keys with namespaced SHA-256 identities
   so accepted long and Unicode queries remain within storage key limits.
 - Added deterministic, fixed-size, plaintext-absence, read/write symmetry, and
