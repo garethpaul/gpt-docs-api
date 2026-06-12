@@ -12,6 +12,8 @@
   automatic analyzer omitted imported `chalicelib` cache calls.
 - Added baseline contracts that reject tracked vendor trees, bytecode, caches,
   generated package output, or weakened package verification.
+- Explicitly disabled unintended Vercel Git deployments so the repository's
+  deployment status reflects its Chalice API and GitHub Pages workflows.
 - Replaced extension `innerHTML` sinks with text-only DOM rendering, restricted
   source links to HTTP(S), isolated new tabs, and added canonical regressions.
 - Replaced raw DynamoDB query partition keys with namespaced SHA-256 identities

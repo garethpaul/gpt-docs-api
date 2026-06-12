@@ -72,6 +72,10 @@ offline `make check` baseline. Deployable dependencies come from
 `api/requirements.txt`; generated `api/vendor/` environments are not tracked.
 The package verifier also confirms the generated role can read and write only
 the `gpt_docs` DynamoDB cache table needed by the application.
+The API implementation targets AWS Chalice, while repository settings publish
+the static project content through GitHub Pages. Vercel automatic Git deployments are disabled
+in `vercel.json` because their rewrite targeted the Flask entry point retired
+during the 2023 Chalice migration.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 The retrieval context length guard caps each accepted Pinecone metadata text
