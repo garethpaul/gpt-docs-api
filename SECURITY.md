@@ -46,6 +46,9 @@ Retrieved document context should stay bounded before it is assembled into
 generated-answer prompts.
 Generated-answer cache entries should carry a bounded `expires_at` lifetime;
 enable DynamoDB TTL on that attribute so stale query data is physically removed.
+Cache partition keys use a namespaced SHA-256 digest rather than raw user
+questions, keeping accepted long or multi-byte queries within DynamoDB key
+limits and reducing plaintext exposure in storage diagnostics.
 
 Unexpected API route failures should return generic 500 errors to callers and
 keep detailed exception text in server logs.

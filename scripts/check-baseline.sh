@@ -32,6 +32,7 @@ RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-retrieval-context-length
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 CACHE_EXPIRATION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-cache-expiration-boundary.md"
+CACHE_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-12-cache-query-key-hashing.md"
 
 require_file() {
   path=$1
@@ -73,6 +74,7 @@ for path in \
   "docs/plans/2026-06-09-retrieval-context-length-guard.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-cache-expiration-boundary.md" \
+  "docs/plans/2026-06-12-cache-query-key-hashing.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -205,6 +207,16 @@ if ! grep -Fq "test_import_does_not_create_dynamodb_resource" "$TEST_CACHE" ||
   exit 1
 fi
 
+if ! grep -Fq "def cache_key" "$CACHE" ||
+  ! grep -Fq "hashlib.sha256(query.encode('utf-8')).hexdigest()" "$CACHE" ||
+  ! grep -Fq "Key={'query_string': cache_key(query)}" "$CACHE" ||
+  ! grep -Fq "Item={'query_string': cache_key(query)" "$CACHE" ||
+  ! grep -Fq "test_cache_key_is_fixed_size_and_deterministic" "$TEST_CACHE" ||
+  ! grep -Fq "test_cache_key_handles_long_unicode_without_plaintext" "$TEST_CACHE"; then
+  printf '%s\n' "Cache reads and writes must use fixed-size SHA-256 query identities." >&2
+  exit 1
+fi
+
 if grep -Fq "from chalice" "$UTILS" || grep -Fq "BadRequestError" "$UTILS"; then
   printf '%s\n' "Pure request utility helpers must not import Chalice." >&2
   exit 1
@@ -260,6 +272,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "retrieval metadata guard" "$README" ||
   ! grep -Fq "retrieval context length" "$README" ||
   ! grep -Fq "expires_at" "$README" ||
+  ! grep -Fq "fixed-size SHA-256 identity" "$README" ||
   ! grep -Fq "generic 500 errors" "$README" ||
   ! grep -Fq "classification weight schema" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
@@ -280,6 +293,7 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "retrieval metadata guard" "$VISION" ||
   ! grep -Fq "retrieval context length" "$VISION" ||
   ! grep -Fq "cache expiration" "$VISION" ||
+  ! grep -Fq "fixed-size SHA-256 cache keys" "$VISION" ||
   ! grep -Fq "generic 500 errors" "$VISION" ||
   ! grep -Fq "classification weight schema" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
@@ -299,6 +313,7 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "retrieval metadata guard" "$CHANGES" ||
   ! grep -Fq "retrieval context length" "$CHANGES" ||
   ! grep -Fq "cache entries" "$CHANGES" ||
+  ! grep -Fq "SHA-256 identities" "$CHANGES" ||
   ! grep -Fq "generic 500 errors" "$CHANGES" ||
   ! grep -Fq "classification weight schema" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
@@ -318,8 +333,14 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$RETRIEVAL_CONTEXT_PLAN" ||
   ! grep -Fq "status: completed" "$CI_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_EXPIRATION_PLAN" ||
+  ! grep -Fq "status: completed" "$CACHE_KEY_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Mutations restoring raw query strings" "$CACHE_KEY_PLAN"; then
+  printf '%s\n' "Cache query-key plan must record completed mutation verification." >&2
   exit 1
 fi
 

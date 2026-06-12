@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-12
+
+- Replaced raw DynamoDB query partition keys with namespaced SHA-256 identities
+  so accepted long and Unicode queries remain within storage key limits.
+- Added deterministic, fixed-size, plaintext-absence, read/write symmetry, and
+  static regression coverage without changing the cache table schema or TTL.
+
 ## 2026-06-10
 
 - Added one-day expiration to generated-answer cache entries, rejected stale or

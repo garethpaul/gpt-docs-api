@@ -1,4 +1,5 @@
 import importlib
+import hashlib
 import sys
 import unittest
 from unittest.mock import patch
@@ -36,8 +37,30 @@ class CacheTests(unittest.TestCase):
 
             importlib.reload(cache)
 
+    def test_cache_key_is_fixed_size_and_deterministic(self):
+        from chalicelib.cache import cache_key
+
+        expected = "query_sha256:" + hashlib.sha256(
+            "hello".encode("utf-8")
+        ).hexdigest()
+
+        self.assertEqual(expected, cache_key("hello"))
+        self.assertEqual(cache_key("hello"), cache_key("hello"))
+        self.assertNotEqual(cache_key("hello"), cache_key("Hello"))
+        self.assertEqual(77, len(cache_key("")))
+
+    def test_cache_key_handles_long_unicode_without_plaintext(self):
+        from chalicelib.cache import cache_key
+
+        query = "\U0001f680" * 4000
+        key = cache_key(query)
+
+        self.assertEqual(77, len(key))
+        self.assertTrue(key.startswith("query_sha256:"))
+        self.assertNotIn("\U0001f680", key)
+
     def test_get_cached_response_returns_item(self):
-        from chalicelib.cache import get_cached_response
+        from chalicelib.cache import cache_key, get_cached_response
 
         table = FakeTable(item={
             "response": "answer",
@@ -51,7 +74,7 @@ class CacheTests(unittest.TestCase):
         )
         self.assertEqual(
             table.get_item_calls,
-            [{"Key": {"query_string": "hello"}}],
+            [{"Key": {"query_string": cache_key("hello")}}],
         )
 
     def test_get_cached_response_returns_none_when_item_missing(self):
@@ -69,7 +92,7 @@ class CacheTests(unittest.TestCase):
         self.assertIsNone(get_cached_response("legacy", table=missing_expiry, now=100))
 
     def test_store_in_cache_writes_existing_item_shape(self):
-        from chalicelib.cache import store_in_cache
+        from chalicelib.cache import cache_key, store_in_cache
 
         table = FakeTable()
 
@@ -81,7 +104,7 @@ class CacheTests(unittest.TestCase):
             [
                 {
                     "Item": {
-                        "query_string": "hello",
+                        "query_string": cache_key("hello"),
                         "response": "answer",
                         "links": ["url"],
                         "expires_at": 160,
