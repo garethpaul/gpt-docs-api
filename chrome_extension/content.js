@@ -12,10 +12,26 @@ function clearInput() {
   document.getElementById("queryInput").value = "";
 }
 
+function setText(element, value) {
+  element.textContent = value == null ? "" : String(value);
+}
+
+function safeHttpUrl(value) {
+  try {
+    var parsed = new URL(String(value));
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return parsed.href;
+    }
+  } catch (error) {
+    return null;
+  }
+  return null;
+}
+
 // Create a new <style> element
 var styleElement = document.createElement("style");
 styleElement.type = "text/css";
-styleElement.innerHTML = cssRules;
+styleElement.textContent = cssRules;
 
 // Append the <style> element to the <head> element of the page
 document.head.appendChild(styleElement);
@@ -69,19 +85,19 @@ function addResponse(text, links, parentElement) {
     inputText = inputText + "?";
   }
 
-  h2.innerHTML = inputText;
+  setText(h2, inputText);
 
   response.appendChild(h2);
   // add a p element to the response div element
   var p = document.createElement("p");
   p.className = "response__p";
-  p.innerHTML = text;
+  setText(p, text);
   response.appendChild(p);
 
   // Create another h2 element that says "Sources"
   var h2 = document.createElement("h2");
   h2.className = "modal-response-h2";
-  h2.innerHTML = "Sources";
+  setText(h2, "Sources");
   response.appendChild(h2);
 
   // create a list of a links with the className .modal-response__link
@@ -90,6 +106,10 @@ function addResponse(text, links, parentElement) {
 
   // loop through the links array
   for (var i = 0; i < links.length; i++) {
+    var safeUrl = safeHttpUrl(links[i]);
+    if (!safeUrl) {
+      continue;
+    }
     // create a new list item element
     var newListItem = document.createElement("li");
     // set the className
@@ -99,11 +119,11 @@ function addResponse(text, links, parentElement) {
     // set the className
     newAnchor.className = "modal-response__link";
     // set the href attribute
-    newAnchor.setAttribute("href", links[i]);
+    newAnchor.setAttribute("href", safeUrl);
     // set the target attribute
     newAnchor.setAttribute("target", "_blank");
-    // set the innerHTML
-    newAnchor.innerHTML = links[i];
+    newAnchor.setAttribute("rel", "noopener noreferrer");
+    setText(newAnchor, safeUrl);
 
     // append the anchor element to the list item element
     newListItem.appendChild(newAnchor);
@@ -117,7 +137,7 @@ function addResponse(text, links, parentElement) {
   // add a h3 element to the response div element
   var h3 = document.createElement("h3");
   h3.className = "modal-response__h3";
-  h3.innerHTML = "Was this response useful?";
+  setText(h3, "Was this response useful?");
   response.appendChild(h3);
 
   // create div with class modal-response__button_container
@@ -126,12 +146,12 @@ function addResponse(text, links, parentElement) {
   // create a yes and no button for the user to click with the question was this response useful
   var yesButton = document.createElement("button");
   yesButton.className = "modal-response__button";
-  yesButton.innerHTML = "Yes";
+  setText(yesButton, "Yes");
   buttonContainer.appendChild(yesButton);
 
   var noButton = document.createElement("button");
   noButton.className = "modal-response__button";
-  noButton.innerHTML = "No";
+  setText(noButton, "No");
   buttonContainer.appendChild(noButton);
 
   // add click event listeners to the yes and no buttons
@@ -141,7 +161,7 @@ function addResponse(text, links, parentElement) {
     // create p class for thank you message
     var thankyou = document.createElement("p");
     thankyou.className = "modal-response__p";
-    thankyou.innerHTML = "Thank you for your feedback!";
+    setText(thankyou, "Thank you for your feedback!");
     // append the thank you message to the response div element
     response.appendChild(thankyou);
     // remove the yes and no buttons
@@ -198,7 +218,7 @@ function createLoader(parentElement) {
   // Create an h2 element that says "Gathering sources ..."
   var h2 = document.createElement("h2");
   h2.className = "gpt-loading__h2";
-  h2.innerHTML = "Gathering sources ...";
+  setText(h2, "Gathering sources ...");
 
   // Define the array of messages to rotate
   const messages = [
@@ -211,10 +231,9 @@ function createLoader(parentElement) {
   // Initialize the counter
   let counter = 0;
 
-  // Rotate the innerHTML of the h2 element every 5 seconds
+  // Rotate the loading message every 5 seconds.
   setInterval(function () {
-    // Set the innerHTML to the current message
-    h2.innerHTML = messages[counter];
+    setText(h2, messages[counter]);
 
     // Increment the counter
     counter++;
@@ -254,13 +273,13 @@ function addModal(b) {
     // add a close button to the right of the bar
     var close = document.createElement("span");
     close.className = "close";
-    close.innerHTML = "&times;";
+    setText(close, "×");
     // when the user clicks on the close button, remove the overlay
 
     // Add a title to the top bar
     var title = document.createElement("h2");
     title.className = "top-bar__title";
-    title.innerHTML = "GPT Docs";
+    setText(title, "GPT Docs");
     topBar.appendChild(title);
     // add a pill to the right of the title with experimental with a background of #f22f46 and and a color of a lighter version of that red
     // create a div element to hold the pill
@@ -269,7 +288,7 @@ function addModal(b) {
 
     var pill = document.createElement("span");
     pill.className = "pill";
-    pill.innerHTML = "Experimental";
+    setText(pill, "Experimental");
     // add wave-text class to the pill
     pill.classList.add("wave-text");
 
@@ -382,11 +401,11 @@ function addModal(b) {
     form.appendChild(input);
     var typewriterText = document.createElement("span");
     typewriterText.id = "typewriterText";
-    typewriterText.innerHTML = "";
+    setText(typewriterText, "");
     //form.appendChild(typewriterText);
     var cursor = document.createElement("span");
     cursor.className = "cursor";
-    cursor.innerHTML = "▌";
+    setText(cursor, "▌");
     //form.appendChild(cursor);
 
     // add the form to the right content div element
@@ -465,14 +484,20 @@ document.addEventListener("keydown", function (event) {
 // add an event listener to the new list item
 newListItem.addEventListener("click", addOverlay);
 
-// Set the inner HTML for the new list item (replace with your desired content)
-newListItem.innerHTML =
-  '<a class="docs-nav__link gpt-docs-nav-link">' +
-  '<img src="' +
-  newLogoNavImg +
-  '" alt="Your Alt Text" class="docs-nav__icon">' +
-  '<span class="docs-nav__text"></span>' +
-  "</a>";
+var navLink = document.createElement("a");
+navLink.className = "docs-nav__link gpt-docs-nav-link";
+
+var navIcon = document.createElement("img");
+navIcon.src = newLogoNavImg;
+navIcon.alt = "GPT Docs";
+navIcon.className = "docs-nav__icon";
+
+var navText = document.createElement("span");
+navText.className = "docs-nav__text";
+
+navLink.appendChild(navIcon);
+navLink.appendChild(navText);
+newListItem.appendChild(navLink);
 
 // Get the unordered list element with the class 'docs-nav__secondary'
 var ulElement = document.querySelector(".docs-nav__secondary");

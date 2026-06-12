@@ -62,7 +62,8 @@ make verify
 unit tests without live OpenAI, Pinecone, AWS, or Twilio credentials, and
 `make build` compiles the Chalice app and helper modules. `make verify` keeps
 the existing combined gate across tests, compile checks, and the source
-baseline.
+baseline. The baseline also syntax-checks both extension bundles and verifies
+that remote content uses text-only rendering with HTTP(S)-only source links.
 GitHub Actions installs the pinned API requirements on Python 3.10, verifies
 dependency consistency, checks out without persisting the workflow token, and
 runs the same offline `make check` baseline.
@@ -111,6 +112,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   metadata cannot expand generated-answer prompts without bound.
 - Keep unexpected route failures logged server-side while callers receive
   generic 500 errors.
+- Keep user queries and model responses on text-only DOM rendering in both
+  extension bundles. Source links must be HTTP(S)-only and use opener
+  isolation when opened in a new tab.
 - Review changes touching network requests, sockets, or service endpoints; examples from the scan include api/chalicelib/public/content.js, api/chalicelib/public/manifest.json, api/chalicelib/public/segment-snippet.js, chrome_extension/content.js, and 2 more.
 - Review changes touching file, media, JSON, XML, CSV, OCR, or data parsing; examples from the scan include api/app.py, api/chalicelib/classification.py, api/chalicelib/public/content.css, api/chalicelib/public/content.js, and 5 more.
 - Review changes touching database, model, or persistence code; examples from the scan include api/chalicelib/classification.py, api/tests/test_classification.py, docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md.

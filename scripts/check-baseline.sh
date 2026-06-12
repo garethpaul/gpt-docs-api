@@ -33,6 +33,8 @@ CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 CACHE_EXPIRATION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-cache-expiration-boundary.md"
 CACHE_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-12-cache-query-key-hashing.md"
+EXTENSION_RENDERING_PLAN="$ROOT_DIR/docs/plans/2026-06-12-safe-extension-rendering.md"
+EXTENSION_RENDERING_CHECK="$ROOT_DIR/scripts/check-extension-rendering.sh"
 
 require_file() {
   path=$1
@@ -75,6 +77,8 @@ for path in \
   "docs/plans/2026-06-10-ci-baseline.md" \
   "docs/plans/2026-06-10-cache-expiration-boundary.md" \
   "docs/plans/2026-06-12-cache-query-key-hashing.md" \
+  "docs/plans/2026-06-12-safe-extension-rendering.md" \
+  "scripts/check-extension-rendering.sh" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -317,6 +321,7 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "retrieval context length" "$VISION" ||
   ! grep -Fq "cache expiration" "$VISION" ||
   ! grep -Fq "fixed-size SHA-256 cache keys" "$VISION" ||
+  ! grep -Fq "text-only extension rendering" "$VISION" ||
   ! grep -Fq "generic 500 errors" "$VISION" ||
   ! grep -Fq "classification weight schema" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
@@ -337,6 +342,7 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "retrieval context length" "$CHANGES" ||
   ! grep -Fq "cache entries" "$CHANGES" ||
   ! grep -Fq "SHA-256 identities" "$CHANGES" ||
+  ! grep -Fq "text-only DOM rendering" "$CHANGES" ||
   ! grep -Fq "generic 500 errors" "$CHANGES" ||
   ! grep -Fq "classification weight schema" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
@@ -357,6 +363,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CI_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_EXPIRATION_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_KEY_PLAN" ||
+  ! grep -Fq "status: completed" "$EXTENSION_RENDERING_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
@@ -379,5 +386,6 @@ if ! grep -Fq "GitHub Actions" "$CI_PLAN" ||
 fi
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
+"$EXTENSION_RENDERING_CHECK"
 
 printf '%s\n' "GPT Docs API baseline checks passed."
