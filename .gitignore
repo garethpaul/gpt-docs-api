@@ -18,6 +18,9 @@ config.json
 # Ignore Chalice's default deployment package
 deployment.zip
 
+# Chalice installs deployable dependencies from api/requirements.txt.
+/api/vendor/
+
 # Ignore Chalice local data
 .chalice
 .chalice/deployments/

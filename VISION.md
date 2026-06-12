@@ -34,6 +34,10 @@ Priority:
 - Keep the classification weight schema explicit and numeric before returning
   model output to callers
 - Keep unauthenticated public asset serving path-bound to checked-in assets
+- Keep deployable dependencies sourced from `api/requirements.txt`, with no
+  checked-in interpreter-specific `api/vendor/` environment
+- Keep the generated Lambda role limited to `gpt_docs` cache reads/writes and
+  standard CloudWatch Logs delivery
 
 Next priorities:
 
@@ -47,10 +51,11 @@ Contribution rules:
 
 - One PR = one focused API, crawler, embedding, extension, or documentation change.
 - Run `make verify` before pushing code changes. The local gate also exposes
-  `make lint`, `make test`, `make build`, and `make check` for the standard
-  pre-push sequence. GitHub Actions verifies the pinned Python 3.10 dependency
-  set and runs the no-live-credentials baseline without persisted checkout
-  credentials.
+  `make lint`, `make test`, `make build`, `make check`, and
+  `make package-check` for the standard pre-push sequence. GitHub Actions
+  verifies the pinned Python 3.10 dependency set, constructs a temporary
+  Chalice package, and runs the no-live-credentials baseline without persisted
+  checkout credentials.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger

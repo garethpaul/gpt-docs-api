@@ -37,5 +37,8 @@ jobs:
       - name: Verify dependency consistency
         run: python -m pip check
 
+      - name: Verify Chalice deployment package
+        run: make package-check
+
       - name: Run baseline
         run: make check

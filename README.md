@@ -55,6 +55,7 @@ make lint
 make test
 make build
 make check
+make package-check
 make verify
 ```
 
@@ -65,8 +66,12 @@ the existing combined gate across tests, compile checks, and the source
 baseline. The baseline also syntax-checks both extension bundles and verifies
 that remote content uses text-only rendering with HTTP(S)-only source links.
 GitHub Actions installs the pinned API requirements on Python 3.10, verifies
-dependency consistency, checks out without persisting the workflow token, and
-runs the same offline `make check` baseline.
+dependency consistency, constructs and inspects a real Chalice deployment
+package, checks out without persisting the workflow token, and runs the same
+offline `make check` baseline. Deployable dependencies come from
+`api/requirements.txt`; generated `api/vendor/` environments are not tracked.
+The package verifier also confirms the generated role can read and write only
+the `gpt_docs` DynamoDB cache table needed by the application.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 The retrieval context length guard caps each accepted Pinecone metadata text
