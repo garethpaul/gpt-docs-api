@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-10
+
+- Added a GitHub Actions workflow that installs API requirements and runs the
+  no-live-credentials `make check` baseline for pushes and pull requests.
+
 ## 2026-06-09
 
 - Returned generic 500 errors for unexpected `/ask` and `/classify/builder`

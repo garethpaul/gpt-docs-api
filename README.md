@@ -63,6 +63,8 @@ unit tests without live OpenAI, Pinecone, AWS, or Twilio credentials, and
 `make build` compiles the Chalice app and helper modules. `make verify` keeps
 the existing combined gate across tests, compile checks, and the source
 baseline.
+GitHub Actions installs `api/requirements.txt` and runs the same `make check`
+baseline on pushes and pull requests without live service credentials.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 The retrieval context length guard caps each accepted Pinecone metadata text
@@ -130,6 +132,7 @@ When the required SDK or runtime is unavailable, use static checks and source re
   retrieval context length guard.
 - See `docs/plans/2026-06-09-generic-error-responses.md` for generic 500
   errors on unexpected route failures.
+- See `docs/plans/2026-06-10-ci-baseline.md` for the GitHub Actions baseline.
 
 ## Contributing
 

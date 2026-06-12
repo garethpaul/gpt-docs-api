@@ -29,6 +29,8 @@ MAKE_GATES_PLAN="$ROOT_DIR/docs/plans/2026-06-09-make-gate-aliases.md"
 RETRIEVAL_METADATA_PLAN="$ROOT_DIR/docs/plans/2026-06-09-retrieval-metadata-guard.md"
 GENERIC_ERROR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-generic-error-responses.md"
 RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-retrieval-context-length-guard.md"
+CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
+CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
 
 require_file() {
   path=$1
@@ -39,6 +41,7 @@ require_file() {
 }
 
 for path in \
+  ".github/workflows/check.yml" \
   "CHANGES.md" \
   "README.md" \
   "SECURITY.md" \
@@ -67,6 +70,7 @@ for path in \
   "docs/plans/2026-06-09-retrieval-metadata-guard.md" \
   "docs/plans/2026-06-09-generic-error-responses.md" \
   "docs/plans/2026-06-09-retrieval-context-length-guard.md" \
+  "docs/plans/2026-06-10-ci-baseline.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -88,6 +92,14 @@ for requirement in \
     exit 1
   fi
 done
+
+if ! grep -Fq "actions/setup-python@v5" "$CI_WORKFLOW" ||
+  ! grep -Fq 'python-version: "3.10"' "$CI_WORKFLOW" ||
+  ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
+  ! grep -Fq "make check" "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions workflow must install API requirements and run make check." >&2
+  exit 1
+fi
 
 if ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
   ! grep -Fq "GPT_DOCS_API_KEY_HEADER = 'X-GPT-Docs-API-Key'" "$CONFIG"; then
@@ -221,6 +233,7 @@ if ! grep -Fq "FakeOpenAI" "$TEST_CLASSIFICATION" ||
 fi
 
 if ! grep -Fq "make verify" "$README" ||
+  ! grep -Fq "GitHub Actions" "$README" ||
   ! grep -Fq "make lint" "$README" ||
   ! grep -Fq "make test" "$README" ||
   ! grep -Fq "make build" "$README" ||
@@ -240,6 +253,7 @@ if ! grep -Fq "make verify" "$README" ||
 fi
 
 if ! grep -Fq "Run \`make verify\`" "$VISION" ||
+  ! grep -Fq "GitHub Actions" "$VISION" ||
   ! grep -Fq "make lint" "$VISION" ||
   ! grep -Fq "make test" "$VISION" ||
   ! grep -Fq "make build" "$VISION" ||
@@ -256,6 +270,7 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
 fi
 
 if ! grep -Fq "source baseline guard" "$CHANGES" ||
+  ! grep -Fq "GitHub Actions" "$CHANGES" ||
   ! grep -Fq "make lint" "$CHANGES" ||
   ! grep -Fq "make test" "$CHANGES" ||
   ! grep -Fq "make build" "$CHANGES" ||
@@ -283,8 +298,15 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$RETRIEVAL_METADATA_PLAN" ||
   ! grep -Fq "status: completed" "$GENERIC_ERROR_PLAN" ||
   ! grep -Fq "status: completed" "$RETRIEVAL_CONTEXT_PLAN" ||
+  ! grep -Fq "status: completed" "$CI_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "GitHub Actions" "$CI_PLAN" ||
+  ! grep -Fq "make check" "$CI_PLAN"; then
+  printf '%s\n' "CI baseline plan must record hosted make check verification." >&2
   exit 1
 fi
 
