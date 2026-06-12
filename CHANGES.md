@@ -2,6 +2,20 @@
 
 ## 2026-06-12
 
+- Pinned the hosted pip bootstrap to 26.1.2 and added contracts rejecting
+  floating, alternate, missing, or duplicate installer upgrades.
+- Removed the 1,618-file Python 3.9 `api/vendor/` snapshot so Chalice packages
+  dependencies from the maintained requirements instead of checked-in binary
+  artifacts.
+- Added a temporary, credential-free Chalice package build and structural
+  archive verification to the local command surface and hosted CI.
+- Added a tracked least-privilege Lambda policy and SAM verification for
+  `gpt_docs` cache reads and writes after package review found that Chalice's
+  automatic analyzer omitted imported `chalicelib` cache calls.
+- Added baseline contracts that reject tracked vendor trees, bytecode, caches,
+  generated package output, or weakened package verification.
+- Explicitly disabled unintended Vercel Git deployments so the repository's
+  deployment status reflects its Chalice API and GitHub Pages workflows.
 - Replaced extension `innerHTML` sinks with text-only DOM rendering, restricted
   source links to HTTP(S), isolated new tabs, and added canonical regressions.
 - Replaced raw DynamoDB query partition keys with namespaced SHA-256 identities

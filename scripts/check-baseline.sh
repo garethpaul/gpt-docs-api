@@ -7,6 +7,7 @@ README="$ROOT_DIR/README.md"
 VISION="$ROOT_DIR/VISION.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 REQUIREMENTS="$ROOT_DIR/api/requirements.txt"
+IAM_POLICY="$ROOT_DIR/api/iam-policy.json"
 APP="$ROOT_DIR/api/app.py"
 AUTH="$ROOT_DIR/api/chalicelib/auth.py"
 CACHE="$ROOT_DIR/api/chalicelib/cache.py"
@@ -35,6 +36,11 @@ CACHE_EXPIRATION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-cache-expiration-boundary
 CACHE_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-12-cache-query-key-hashing.md"
 EXTENSION_RENDERING_PLAN="$ROOT_DIR/docs/plans/2026-06-12-safe-extension-rendering.md"
 EXTENSION_RENDERING_CHECK="$ROOT_DIR/scripts/check-extension-rendering.sh"
+VENDOR_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-chalice-vendor-cleanup.md"
+PACKAGE_CHECK="$ROOT_DIR/scripts/verify-chalice-package.sh"
+VERCEL_CONFIG="$ROOT_DIR/vercel.json"
+VERCEL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-vercel-deployment-ownership.md"
+PIP_BOOTSTRAP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-pip-bootstrap-pin.md"
 
 require_file() {
   path=$1
@@ -51,7 +57,9 @@ for path in \
   "SECURITY.md" \
   "VISION.md" \
   "Makefile" \
+  "vercel.json" \
   "api/requirements.txt" \
+  "api/iam-policy.json" \
   "api/app.py" \
   "api/chalicelib/auth.py" \
   "api/chalicelib/cache.py" \
@@ -78,17 +86,80 @@ for path in \
   "docs/plans/2026-06-10-cache-expiration-boundary.md" \
   "docs/plans/2026-06-12-cache-query-key-hashing.md" \
   "docs/plans/2026-06-12-safe-extension-rendering.md" \
+  "docs/plans/2026-06-12-chalice-vendor-cleanup.md" \
+  "docs/plans/2026-06-12-vercel-deployment-ownership.md" \
+  "docs/plans/2026-06-12-pip-bootstrap-pin.md" \
   "scripts/check-extension-rendering.sh" \
+  "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
 
-for target in "lint:" "test:" "build: compile" "compile:" "check:" "verify: test compile check"; do
+python - "$IAM_POLICY" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], encoding="utf-8") as policy_file:
+    policy = json.load(policy_file)
+
+statements = {
+    (
+        statement.get("Effect"),
+        tuple(sorted(statement.get("Action", []))),
+        statement.get("Resource"),
+    )
+    for statement in policy.get("Statement", [])
+}
+expected = {
+    (
+        "Allow",
+        ("dynamodb:GetItem", "dynamodb:PutItem"),
+        "arn:aws:dynamodb:*:*:table/gpt_docs",
+    ),
+    (
+        "Allow",
+        ("logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"),
+        "arn:aws:logs:*:*:*",
+    ),
+}
+if statements != expected:
+    raise SystemExit("IAM policy must contain only scoped cache and log writes.")
+PY
+
+python - "$VERCEL_CONFIG" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if config.get("git", {}).get("deploymentEnabled") is not False:
+    raise SystemExit(
+        "vercel.json must disable automatic Git deployments for every branch"
+    )
+if "rewrites" in config:
+    raise SystemExit(
+        "vercel.json must not route requests to the retired api/index function"
+    )
+PY
+
+for target in "lint:" "test:" "build: compile" "compile:" "check:" "package-check:" "verify: test compile check"; do
   if ! grep -Fq "$target" "$MAKEFILE"; then
     printf '%s\n' "Makefile must expose target: $target" >&2
     exit 1
   fi
 done
+
+if ! grep -Fxq "/api/vendor/" "$ROOT_DIR/.gitignore"; then
+  printf '%s\n' "api/vendor must remain ignored as generated Chalice package input." >&2
+  exit 1
+fi
+
+tracked_artifacts=$(git -C "$ROOT_DIR" ls-files | grep -E '(^api/vendor/|(^|/)(__pycache__/|[^/]+\.py[co]$)|(^|/)deployment\.zip$|(^|/)\.chalice/(deployments|venv)/)' || true)
+if [ -n "$tracked_artifacts" ]; then
+  printf '%s\n' "Generated dependency or package artifacts must not be tracked:" >&2
+  printf '%s\n' "$tracked_artifacts" >&2
+  exit 1
+fi
 
 for requirement in \
   "chalice==1.33.0" \
@@ -133,11 +204,66 @@ if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   ! grep -Fq "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" "$CI_WORKFLOW" ||
   ! grep -Fq 'python-version: "3.10"' "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
+  ! grep -Fq "python -m pip install --upgrade pip==26.1.2" "$CI_WORKFLOW" ||
   ! grep -Fq "python -m pip check" "$CI_WORKFLOW" ||
+  ! grep -Fq "make package-check" "$CI_WORKFLOW" ||
   ! grep -Fq "make check" "$CI_WORKFLOW"; then
   printf '%s\n' "GitHub Actions must keep the pinned Python 3.10 dependency and test contract." >&2
   exit 1
 fi
+
+python3 - "$CI_WORKFLOW" <<'PY'
+import sys
+from pathlib import Path
+
+workflow = Path(sys.argv[1]).read_text()
+bootstrap = "python -m pip install --upgrade pip==26.1.2"
+if workflow.count(bootstrap) != 1:
+    raise SystemExit("GitHub Actions must bootstrap exactly one pinned pip version.")
+if "python -m pip install --upgrade pip\n" in workflow:
+    raise SystemExit("GitHub Actions must not resolve a floating pip upgrade.")
+if workflow.count("python -m pip install --upgrade pip") != 1:
+    raise SystemExit("GitHub Actions must not add duplicate or alternate pip bootstraps.")
+PY
+
+if ! grep -Fq "status: completed" "$PIP_BOOTSTRAP_PLAN" ||
+  ! grep -Fq "pip==26.1.2" "$PIP_BOOTSTRAP_PLAN" ||
+  ! grep -Fq "Local and external-working-directory verification passed" "$PIP_BOOTSTRAP_PLAN" ||
+  ! grep -Fq "hostile mutations rejected" "$PIP_BOOTSTRAP_PLAN"; then
+  printf '%s\n' "Pip bootstrap plan must record completed status and verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "pip 26.1.2" "$README" ||
+  ! grep -Fq "pinned installer bootstrap" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "exact pip bootstrap" "$VISION" ||
+  ! grep -Fq "Pinned the hosted pip bootstrap" "$CHANGES"; then
+  printf '%s\n' "Repository guidance must document the pinned pip bootstrap boundary." >&2
+  exit 1
+fi
+
+if ! grep -Fq "scripts/verify-chalice-package.sh" "$MAKEFILE" ||
+  ! grep -Fq "mktemp -d" "$PACKAGE_CHECK" ||
+  ! grep -Fq "trap cleanup EXIT HUP INT TERM" "$PACKAGE_CHECK" ||
+  ! grep -Fq "AWS_EC2_METADATA_DISABLED=true" "$PACKAGE_CHECK" ||
+  ! grep -Fq "AWS_ACCESS_KEY_ID=package-verification" "$PACKAGE_CHECK" ||
+  ! grep -Fq "AWS_DEFAULT_REGION=us-east-1" "$PACKAGE_CHECK" ||
+  ! grep -Fq "AWS_SHARED_CREDENTIALS_FILE=/dev/null" "$PACKAGE_CHECK" ||
+  ! grep -Fq "PYTHONNOUSERSITE=1" "$PACKAGE_CHECK" ||
+  ! grep -Fq '"autogen_policy": false' "$PACKAGE_CHECK" ||
+  ! grep -Fq "policy-package-verification.json" "$PACKAGE_CHECK" ||
+  ! grep -Fq "timeout" "$PACKAGE_CHECK" ||
+  ! grep -Fq "chalice package" "$PACKAGE_CHECK" ||
+  ! grep -Fq "deployment.zip" "$PACKAGE_CHECK" ||
+  ! grep -Fq "sam.json" "$PACKAGE_CHECK" ||
+  ! grep -Fq 'function.get("Runtime") != "python3.10"' "$PACKAGE_CHECK" ||
+  ! grep -Fq '"dynamodb:GetItem", "dynamodb:PutItem"' "$PACKAGE_CHECK" ||
+  ! grep -Fq '"chalice/", "openai/", "pinecone/"' "$PACKAGE_CHECK"; then
+  printf '%s\n' "Package verification must remain temporary, bounded, and structural." >&2
+  exit 1
+fi
+
+sh -n "$PACKAGE_CHECK"
 
 if ! grep -Fq "CACHE_TTL_SECONDS = 86400" "$CONFIG" ||
   ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
@@ -178,7 +304,10 @@ if ! grep -Fq "def is_twilio_doc_url(url)" "$APP" ||
   ! grep -Fq "parsed.hostname" "$APP" ||
   ! grep -Fq "parsed.scheme == 'https'" "$APP" ||
   ! grep -Fq "hostname.endswith('.twilio.com')" "$APP" ||
-  ! grep -Fq "sorted({url for url in urls if is_twilio_doc_url(url)})" "$APP"; then
+  ! grep -Fq "filtered_urls = []" "$APP" ||
+  ! grep -Fq "if is_twilio_doc_url(url) and url not in filtered_urls:" "$APP" ||
+  ! grep -Fq "filtered_urls.append(url)" "$APP" ||
+  ! grep -Fq "urls = sorted(filtered_urls)" "$APP"; then
   printf '%s\n' "Generated answer links must be filtered by HTTPS Twilio host." >&2
   exit 1
 fi
@@ -302,6 +431,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "fixed-size SHA-256 identity" "$README" ||
   ! grep -Fq "generic 500 errors" "$README" ||
   ! grep -Fq "classification weight schema" "$README" ||
+  ! grep -Fq "Vercel automatic Git deployments are disabled" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
   ! grep -Fq "Pinecone" "$README"; then
   printf '%s\n' "README must document verification, changelog, and external service boundaries." >&2
@@ -328,6 +458,11 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   exit 1
 fi
 
+if ! grep -Fq "Vercel automatic Git deployments" "$VISION"; then
+  printf '%s\n' "VISION.md must keep deployment ownership explicit." >&2
+  exit 1
+fi
+
 if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "GitHub Actions" "$CHANGES" ||
   ! grep -Fq "make lint" "$CHANGES" ||
@@ -349,6 +484,11 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   exit 1
 fi
 
+if ! grep -Fq "disabled unintended Vercel Git deployments" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the Vercel deployment boundary." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CHECK_PLAN" ||
   ! grep -Fq "status: completed" "$AUTH_PLAN" ||
@@ -364,10 +504,47 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_EXPIRATION_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_KEY_PLAN" ||
   ! grep -Fq "status: completed" "$EXTENSION_RENDERING_PLAN" ||
+  ! grep -Fq "status: completed" "$VENDOR_CLEANUP_PLAN" ||
+  ! grep -Fq "status: completed" "$VERCEL_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
 fi
+
+if ! grep -Fq "Verified Chalice deployment package" "$VENDOR_CLEANUP_PLAN" ||
+  ! grep -Fq "Hostile mutations" "$VENDOR_CLEANUP_PLAN"; then
+  printf '%s\n' "Chalice vendor cleanup plan must record completed package and mutation evidence." >&2
+  exit 1
+fi
+
+python - "$VERCEL_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+frontmatter_parts = plan.split("---", 2)
+frontmatter = frontmatter_parts[1] if len(frontmatter_parts) == 3 else ""
+statuses = re.findall(r"^status: .+$", frontmatter, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "`make verify`, all 41 API tests",
+    "push run `27395011365`",
+    "pull-request run `27395017871`",
+    "Mutations enabling deployments globally",
+    "no claim is made that",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Vercel deployment-ownership plan must remain completed with actual verification recorded."
+    )
+PY
 
 if ! grep -Fq "Mutations restoring raw query strings" "$CACHE_KEY_PLAN"; then
   printf '%s\n' "Cache query-key plan must record completed mutation verification." >&2

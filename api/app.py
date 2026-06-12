@@ -224,8 +224,12 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     # Generate response
     response = generate_response(augmented_query)
 
-    # Remove duplicate URLs and anything outside HTTPS Twilio-owned hosts.
-    urls = sorted({url for url in urls if is_twilio_doc_url(url)})
+    # Keep this explicit loop compatible with Chalice's IAM policy analyzer.
+    filtered_urls = []
+    for url in urls:
+        if is_twilio_doc_url(url) and url not in filtered_urls:
+            filtered_urls.append(url)
+    urls = sorted(filtered_urls)
 
     return response, urls
 

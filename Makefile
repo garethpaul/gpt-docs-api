@@ -1,4 +1,4 @@
-.PHONY: build check compile lint test verify
+.PHONY: build check compile lint package-check test verify
 
 lint: check
 
@@ -12,5 +12,8 @@ compile:
 
 check:
 	scripts/check-baseline.sh
+
+package-check:
+	scripts/verify-chalice-package.sh
 
 verify: test compile check
