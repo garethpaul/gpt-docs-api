@@ -53,3 +53,24 @@ the maintained one.
 
 Completed on 2026-06-12 after the full offline API and extension baseline passed
 and hostile Vercel configuration mutations were rejected.
+
+## Work Completed
+
+- Disabled automatic Vercel Git deployments globally with the current
+  `git.deploymentEnabled` setting and removed the retired `/api/index` rewrite.
+- Preserved AWS Chalice as the maintained API target and GitHub Pages as the
+  maintained static publishing surface.
+- Added structured configuration validation and deployment-ownership
+  documentation without changing API, extension, test, or Actions behavior.
+
+## Verification Completed
+
+- `make verify`, all 41 API tests, Python compilation, the API baseline,
+  extension-rendering checks, and `git diff --check` passed locally on Python
+  3.12.
+- Implementation push run `27395011365` and pull-request run `27395017871`
+  passed at commit `e8787d8914229c5524d267820284cfe3a753ae67`.
+- Mutations enabling deployments globally, using a branch map, restoring the
+  retired rewrite, or removing `vercel.json` were rejected by the baseline.
+- This evidence validates the repository configuration; no claim is made that
+  an external Vercel project setting was inspected through the Vercel API.

@@ -401,6 +401,35 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   exit 1
 fi
 
+python - "$VERCEL_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+frontmatter_parts = plan.split("---", 2)
+frontmatter = frontmatter_parts[1] if len(frontmatter_parts) == 3 else ""
+statuses = re.findall(r"^status: .+$", frontmatter, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "`make verify`, all 41 API tests",
+    "push run `27395011365`",
+    "pull-request run `27395017871`",
+    "Mutations enabling deployments globally",
+    "no claim is made that",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Vercel deployment-ownership plan must remain completed with actual verification recorded."
+    )
+PY
+
 if ! grep -Fq "Mutations restoring raw query strings" "$CACHE_KEY_PLAN"; then
   printf '%s\n' "Cache query-key plan must record completed mutation verification." >&2
   exit 1
