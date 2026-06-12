@@ -31,6 +31,8 @@ GENERIC_ERROR_PLAN="$ROOT_DIR/docs/plans/2026-06-09-generic-error-responses.md"
 RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-09-retrieval-context-length-guard.md"
 CI_WORKFLOW="$ROOT_DIR/.github/workflows/check.yml"
 CI_PLAN="$ROOT_DIR/docs/plans/2026-06-10-ci-baseline.md"
+CACHE_EXPIRATION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-cache-expiration-boundary.md"
+CACHE_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-12-cache-query-key-hashing.md"
 
 require_file() {
   path=$1
@@ -71,6 +73,8 @@ for path in \
   "docs/plans/2026-06-09-generic-error-responses.md" \
   "docs/plans/2026-06-09-retrieval-context-length-guard.md" \
   "docs/plans/2026-06-10-ci-baseline.md" \
+  "docs/plans/2026-06-10-cache-expiration-boundary.md" \
+  "docs/plans/2026-06-12-cache-query-key-hashing.md" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
@@ -93,15 +97,46 @@ for requirement in \
   fi
 done
 
-if ! grep -Fq "actions/setup-python@v5" "$CI_WORKFLOW" ||
+checkout_credential_contract=$(
+  awk '
+    /uses: actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10/ {
+      in_checkout = 1
+      next
+    }
+    in_checkout && /^[[:space:]]+- name:/ {
+      in_checkout = 0
+    }
+    in_checkout && /persist-credentials:/ {
+      count += 1
+      if ($0 ~ /^[[:space:]]+persist-credentials: false[[:space:]]*$/) {
+        valid += 1
+      }
+    }
+    END {
+      printf "%d:%d\n", count, valid
+    }
+  ' "$CI_WORKFLOW"
+)
+
+if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
+  ! grep -Fq "contents: read" "$CI_WORKFLOW" ||
+  ! grep -Fq "cancel-in-progress: true" "$CI_WORKFLOW" ||
+  ! grep -Fq "runs-on: ubuntu-24.04" "$CI_WORKFLOW" ||
+  ! grep -Fq "timeout-minutes: 15" "$CI_WORKFLOW" ||
+  ! grep -Fq "actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10" "$CI_WORKFLOW" ||
+  ! grep -Fq "# v6.0.3" "$CI_WORKFLOW" ||
+  [ "$checkout_credential_contract" != "1:1" ] ||
+  ! grep -Fq "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" "$CI_WORKFLOW" ||
   ! grep -Fq 'python-version: "3.10"' "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
+  ! grep -Fq "python -m pip check" "$CI_WORKFLOW" ||
   ! grep -Fq "make check" "$CI_WORKFLOW"; then
-  printf '%s\n' "GitHub Actions workflow must install API requirements and run make check." >&2
+  printf '%s\n' "GitHub Actions must keep the pinned Python 3.10 dependency and test contract." >&2
   exit 1
 fi
 
-if ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
+if ! grep -Fq "CACHE_TTL_SECONDS = 86400" "$CONFIG" ||
+  ! grep -Fq "GPT_DOCS_API_KEY_ENV = 'GPT_DOCS_API_KEY'" "$CONFIG" ||
   ! grep -Fq "GPT_DOCS_API_KEY_HEADER = 'X-GPT-Docs-API-Key'" "$CONFIG"; then
   printf '%s\n' "Config must declare the caller auth environment variable and header." >&2
   exit 1
@@ -179,14 +214,29 @@ if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_wor
 fi
 
 if ! grep -Fq "def get_cache_table(resource=None)" "$CACHE" ||
-  ! grep -Fq "def get_cached_response(query, table=None)" "$CACHE" ||
-  ! grep -Fq "def store_in_cache(query, response, links, table=None)" "$CACHE"; then
+  ! grep -Fq "def get_cached_response(query, table=None, now=None)" "$CACHE" ||
+  ! grep -Fq "def store_in_cache(query, response, links, table=None, now=None," "$CACHE" ||
+  ! grep -Fq "expires_at <= current_time" "$CACHE" ||
+  ! grep -Fq "'expires_at': current_time + ttl_seconds" "$CACHE"; then
   printf '%s\n' "Cache helpers must remain injectable for no-credential tests." >&2
   exit 1
 fi
 
-if ! grep -Fq "test_import_does_not_create_dynamodb_resource" "$TEST_CACHE"; then
+if ! grep -Fq "test_import_does_not_create_dynamodb_resource" "$TEST_CACHE" ||
+  ! grep -Fq "test_get_cached_response_rejects_expired_or_missing_expiry" "$TEST_CACHE" ||
+  ! grep -Fq "test_store_in_cache_rejects_invalid_ttl" "$TEST_CACHE" ||
+  ! grep -Fq '"expires_at": 160' "$TEST_CACHE"; then
   printf '%s\n' "Cache tests must cover import safety without DynamoDB resources." >&2
+  exit 1
+fi
+
+if ! grep -Fq "def cache_key" "$CACHE" ||
+  ! grep -Fq "hashlib.sha256(query.encode('utf-8')).hexdigest()" "$CACHE" ||
+  ! grep -Fq "Key={'query_string': cache_key(query)}" "$CACHE" ||
+  ! grep -Fq "Item={'query_string': cache_key(query)" "$CACHE" ||
+  ! grep -Fq "test_cache_key_is_fixed_size_and_deterministic" "$TEST_CACHE" ||
+  ! grep -Fq "test_cache_key_handles_long_unicode_without_plaintext" "$TEST_CACHE"; then
+  printf '%s\n' "Cache reads and writes must use fixed-size SHA-256 query identities." >&2
   exit 1
 fi
 
@@ -244,6 +294,8 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "Twilio link host filtering" "$README" ||
   ! grep -Fq "retrieval metadata guard" "$README" ||
   ! grep -Fq "retrieval context length" "$README" ||
+  ! grep -Fq "expires_at" "$README" ||
+  ! grep -Fq "fixed-size SHA-256 identity" "$README" ||
   ! grep -Fq "generic 500 errors" "$README" ||
   ! grep -Fq "classification weight schema" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
@@ -263,6 +315,8 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "Twilio link host filtering" "$VISION" ||
   ! grep -Fq "retrieval metadata guard" "$VISION" ||
   ! grep -Fq "retrieval context length" "$VISION" ||
+  ! grep -Fq "cache expiration" "$VISION" ||
+  ! grep -Fq "fixed-size SHA-256 cache keys" "$VISION" ||
   ! grep -Fq "generic 500 errors" "$VISION" ||
   ! grep -Fq "classification weight schema" "$VISION"; then
   printf '%s\n' "VISION.md must keep the make verify and API auth contribution rules visible." >&2
@@ -281,6 +335,8 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "Twilio link host filtering" "$CHANGES" ||
   ! grep -Fq "retrieval metadata guard" "$CHANGES" ||
   ! grep -Fq "retrieval context length" "$CHANGES" ||
+  ! grep -Fq "cache entries" "$CHANGES" ||
+  ! grep -Fq "SHA-256 identities" "$CHANGES" ||
   ! grep -Fq "generic 500 errors" "$CHANGES" ||
   ! grep -Fq "classification weight schema" "$CHANGES"; then
   printf '%s\n' "CHANGES.md must record the source baseline and auth guards." >&2
@@ -299,8 +355,20 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$GENERIC_ERROR_PLAN" ||
   ! grep -Fq "status: completed" "$RETRIEVAL_CONTEXT_PLAN" ||
   ! grep -Fq "status: completed" "$CI_PLAN" ||
+  ! grep -Fq "status: completed" "$CACHE_EXPIRATION_PLAN" ||
+  ! grep -Fq "status: completed" "$CACHE_KEY_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Mutations restoring raw query strings" "$CACHE_KEY_PLAN"; then
+  printf '%s\n' "Cache query-key plan must record completed mutation verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Mutations accepting expired entries or omitting written TTLs must fail" "$CACHE_EXPIRATION_PLAN"; then
+  printf '%s\n' "Cache expiration plan must record completed mutation verification." >&2
   exit 1
 fi
 
@@ -309,7 +377,6 @@ if ! grep -Fq "GitHub Actions" "$CI_PLAN" ||
   printf '%s\n' "CI baseline plan must record hosted make check verification." >&2
   exit 1
 fi
-
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 

@@ -63,8 +63,9 @@ unit tests without live OpenAI, Pinecone, AWS, or Twilio credentials, and
 `make build` compiles the Chalice app and helper modules. `make verify` keeps
 the existing combined gate across tests, compile checks, and the source
 baseline.
-GitHub Actions installs `api/requirements.txt` and runs the same `make check`
-baseline on pushes and pull requests without live service credentials.
+GitHub Actions installs the pinned API requirements on Python 3.10, verifies
+dependency consistency, checks out without persisting the workflow token, and
+runs the same offline `make check` baseline.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 The retrieval context length guard caps each accepted Pinecone metadata text
@@ -95,6 +96,11 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `api/chalicelib/public`.
 - Keep request query validation bounded by a maximum query length before routes
   invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
+- DynamoDB cache entries expire after one day in application reads and include
+  an integer `expires_at` epoch attribute for DynamoDB TTL cleanup.
+- Cache reads and writes use a fixed-size SHA-256 identity in the existing
+  `query_string` key attribute, avoiding raw user questions and DynamoDB key
+  length failures for accepted long or Unicode queries.
 - Keep the classification weight schema limited to numeric `with_code`,
   `minimal_code`, and `no_code` values.
 - Twilio link host filtering keeps generated answer links limited to HTTPS
@@ -133,6 +139,10 @@ When the required SDK or runtime is unavailable, use static checks and source re
 - See `docs/plans/2026-06-09-generic-error-responses.md` for generic 500
   errors on unexpected route failures.
 - See `docs/plans/2026-06-10-ci-baseline.md` for the GitHub Actions baseline.
+- See `docs/plans/2026-06-10-cache-expiration-boundary.md` for cache freshness
+  and DynamoDB TTL behavior.
+- See `docs/plans/2026-06-12-cache-query-key-hashing.md` for fixed-size,
+  privacy-minimizing query cache identity.
 
 ## Contributing
 

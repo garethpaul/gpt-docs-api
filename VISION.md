@@ -26,6 +26,9 @@ Priority:
 - Preserve Twilio link host filtering for generated answer citations
 - Preserve the retrieval metadata guard before answer generation
 - Preserve the retrieval context length guard before prompt assembly
+- Preserve one-day cache expiration and the DynamoDB `expires_at` TTL attribute
+- Preserve fixed-size SHA-256 cache keys so raw user queries are not DynamoDB
+  partition-key material
 - Keep unexpected route failures behind generic 500 errors
 - Keep request validation bounded by a maximum query length before model work
 - Keep the classification weight schema explicit and numeric before returning
@@ -44,8 +47,9 @@ Contribution rules:
 - One PR = one focused API, crawler, embedding, extension, or documentation change.
 - Run `make verify` before pushing code changes. The local gate also exposes
   `make lint`, `make test`, `make build`, and `make check` for the standard
-  pre-push sequence. GitHub Actions runs the `make check` baseline on pushes
-  and pull requests.
+  pre-push sequence. GitHub Actions verifies the pinned Python 3.10 dependency
+  set and runs the no-live-credentials baseline without persisted checkout
+  credentials.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger
@@ -55,6 +59,9 @@ Contribution rules:
   generation.
 - Keep the retrieval context length guard on accepted Pinecone metadata before
   prompt assembly.
+- Keep cache expiration enforced before returning generated-answer entries.
+- Keep cache reads and writes on the same namespaced query digest while
+  retaining the existing DynamoDB table and `query_string` attribute.
 - Keep unexpected route failures logged server-side while returning generic 500
   errors to callers.
 - Keep the maximum query length guard in request validation.

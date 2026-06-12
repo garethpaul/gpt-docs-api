@@ -1,9 +1,20 @@
 # Changes
 
+## 2026-06-12
+
+- Replaced raw DynamoDB query partition keys with namespaced SHA-256 identities
+  so accepted long and Unicode queries remain within storage key limits.
+- Added deterministic, fixed-size, plaintext-absence, read/write symmetry, and
+  static regression coverage without changing the cache table schema or TTL.
+
 ## 2026-06-10
 
-- Added a GitHub Actions workflow that installs API requirements and runs the
-  no-live-credentials `make check` baseline for pushes and pull requests.
+- Added one-day expiration to generated-answer cache entries, rejected stale or
+  legacy cache entries without `expires_at`, and emitted DynamoDB TTL metadata.
+- Added a pinned, least-privilege Python 3.10 GitHub Actions workflow that
+  verifies dependency consistency and runs the no-live-credentials
+  auth/retrieval baseline without persisting checkout credentials; the local
+  baseline rejects missing, duplicate, relocated, or contradictory settings.
 
 ## 2026-06-09
 

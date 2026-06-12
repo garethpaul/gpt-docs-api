@@ -44,13 +44,17 @@ For AI-generated responses, validate model output schemas before exposing values
 
 Retrieved document context should stay bounded before it is assembled into
 generated-answer prompts.
+Generated-answer cache entries should carry a bounded `expires_at` lifetime;
+enable DynamoDB TTL on that attribute so stale query data is physically removed.
+Cache partition keys use a namespaced SHA-256 digest rather than raw user
+questions, keeping accepted long or multi-byte queries within DynamoDB key
+limits and reducing plaintext exposure in storage diagnostics.
 
 Unexpected API route failures should return generic 500 errors to callers and
 keep detailed exception text in server logs.
 
-GitHub Actions runs the same no-live-credentials `make check` baseline as local
-development. Do not add deployment, crawler, or live OpenAI/Pinecone/AWS/Twilio
-steps to that workflow without a separate security review.
+GitHub Actions uses read-only repository permissions, verifies the pinned
+Checkout does not persist the workflow token into local Git configuration.
 
 ## Dependency and Supply Chain Security
 
