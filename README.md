@@ -67,6 +67,10 @@ that remote content uses text-only rendering with HTTP(S)-only source links.
 GitHub Actions installs the pinned API requirements on Python 3.10, verifies
 dependency consistency, checks out without persisting the workflow token, and
 runs the same offline `make check` baseline.
+The API implementation targets AWS Chalice, while repository settings publish
+the static project content through GitHub Pages. Vercel automatic Git deployments are disabled
+in `vercel.json` because their rewrite targeted the Flask entry point retired
+during the 2023 Chalice migration.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
 The retrieval context length guard caps each accepted Pinecone metadata text
