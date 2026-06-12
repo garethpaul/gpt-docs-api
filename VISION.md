@@ -56,6 +56,7 @@ Contribution rules:
   verifies the pinned Python 3.10 dependency set, constructs a temporary
   Chalice package, and runs the no-live-credentials baseline without persisted
   checkout credentials.
+- Keep the exact pip bootstrap compatible with the hosted Python 3.10 runtime.
 - Do not commit API keys, cached private data, or generated credentials.
 - Preserve testability without live OpenAI/Pinecone/AWS dependencies.
 - Keep `/ask` and `/classify/builder` behind `GPT_DOCS_API_KEY` or a stronger

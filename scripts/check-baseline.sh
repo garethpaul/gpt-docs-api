@@ -40,6 +40,7 @@ VENDOR_CLEANUP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-chalice-vendor-cleanup.md"
 PACKAGE_CHECK="$ROOT_DIR/scripts/verify-chalice-package.sh"
 VERCEL_CONFIG="$ROOT_DIR/vercel.json"
 VERCEL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-vercel-deployment-ownership.md"
+PIP_BOOTSTRAP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-pip-bootstrap-pin.md"
 
 require_file() {
   path=$1
@@ -87,6 +88,7 @@ for path in \
   "docs/plans/2026-06-12-safe-extension-rendering.md" \
   "docs/plans/2026-06-12-chalice-vendor-cleanup.md" \
   "docs/plans/2026-06-12-vercel-deployment-ownership.md" \
+  "docs/plans/2026-06-12-pip-bootstrap-pin.md" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
@@ -202,10 +204,41 @@ if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   ! grep -Fq "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" "$CI_WORKFLOW" ||
   ! grep -Fq 'python-version: "3.10"' "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
+  ! grep -Fq "python -m pip install --upgrade pip==26.1.2" "$CI_WORKFLOW" ||
   ! grep -Fq "python -m pip check" "$CI_WORKFLOW" ||
   ! grep -Fq "make package-check" "$CI_WORKFLOW" ||
   ! grep -Fq "make check" "$CI_WORKFLOW"; then
   printf '%s\n' "GitHub Actions must keep the pinned Python 3.10 dependency and test contract." >&2
+  exit 1
+fi
+
+python3 - "$CI_WORKFLOW" <<'PY'
+import sys
+from pathlib import Path
+
+workflow = Path(sys.argv[1]).read_text()
+bootstrap = "python -m pip install --upgrade pip==26.1.2"
+if workflow.count(bootstrap) != 1:
+    raise SystemExit("GitHub Actions must bootstrap exactly one pinned pip version.")
+if "python -m pip install --upgrade pip\n" in workflow:
+    raise SystemExit("GitHub Actions must not resolve a floating pip upgrade.")
+if workflow.count("python -m pip install --upgrade pip") != 1:
+    raise SystemExit("GitHub Actions must not add duplicate or alternate pip bootstraps.")
+PY
+
+if ! grep -Fq "status: completed" "$PIP_BOOTSTRAP_PLAN" ||
+  ! grep -Fq "pip==26.1.2" "$PIP_BOOTSTRAP_PLAN" ||
+  ! grep -Fq "Local and external-working-directory verification passed" "$PIP_BOOTSTRAP_PLAN" ||
+  ! grep -Fq "hostile mutations rejected" "$PIP_BOOTSTRAP_PLAN"; then
+  printf '%s\n' "Pip bootstrap plan must record completed status and verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "pip 26.1.2" "$README" ||
+  ! grep -Fq "pinned installer bootstrap" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "exact pip bootstrap" "$VISION" ||
+  ! grep -Fq "Pinned the hosted pip bootstrap" "$CHANGES"; then
+  printf '%s\n' "Repository guidance must document the pinned pip bootstrap boundary." >&2
   exit 1
 fi
 

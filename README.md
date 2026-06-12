@@ -70,6 +70,8 @@ dependency consistency, constructs and inspects a real Chalice deployment
 package, checks out without persisting the workflow token, and runs the same
 offline `make check` baseline. Deployable dependencies come from
 `api/requirements.txt`; generated `api/vendor/` environments are not tracked.
+The job bootstraps exact `pip 26.1.2` before dependency installation, so the
+installer is not a moving workflow input.
 The package verifier also confirms the generated role can read and write only
 the `gpt_docs` DynamoDB cache table needed by the application.
 The API implementation targets AWS Chalice, while repository settings publish

@@ -2,6 +2,8 @@
 
 ## 2026-06-12
 
+- Pinned the hosted pip bootstrap to 26.1.2 and added contracts rejecting
+  floating, alternate, missing, or duplicate installer upgrades.
 - Removed the 1,618-file Python 3.9 `api/vendor/` snapshot so Chalice packages
   dependencies from the maintained requirements instead of checked-in binary
   artifacts.

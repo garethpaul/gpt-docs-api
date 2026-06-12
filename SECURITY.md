@@ -65,6 +65,9 @@ Checkout does not persist the workflow token into local Git configuration.
 
 Dependency updates should come from trusted package managers and should keep lockfiles in sync when lockfiles exist. Do not commit credentials, private keys, tokens, generated secrets, or machine-local configuration. If a vulnerability depends on a compromised package, typosquatting risk, insecure transitive dependency, or unsafe build step, include the package name, affected version, and the path through which it is used.
 
+The hosted dependency job uses a pinned installer bootstrap. Review its Python
+3.10 compatibility and official release metadata whenever that pin changes.
+
 Chalice deployment dependencies are installed from the version-controlled
 `api/requirements.txt` declarations during package construction. Do not commit
 `api/vendor/`, interpreter-specific extension modules, Python bytecode, or
