@@ -128,6 +128,10 @@ Reference: <https://aws.github.io/chalice/topics/packaging.html>
 
 ## Remaining Risks
 
+- This branch contains the unchanged Vercel deployment-ownership PR as a
+  prerequisite so canonical default-base CodeQL can run without restoring the
+  known failed Vercel integration. After that prerequisite merges, refresh
+  this branch against `main` and rerun exact-head validation before merge.
 - The historical binary blobs remain in Git history unless a separately
   authorized history rewrite is performed.
 - Package construction does not validate AWS account configuration, Lambda
