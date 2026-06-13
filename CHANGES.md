@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Made every Make verification target derive the checkout root so test,
+  compile, baseline, and package gates work from external directories.
 - Made DynamoDB response caching best-effort so transient read failures bypass
   the cache and write failures do not discard successfully generated answers.
 - Validated cached response payloads and reapplied HTTPS Twilio citation
