@@ -42,6 +42,7 @@ VERCEL_CONFIG="$ROOT_DIR/vercel.json"
 VERCEL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-vercel-deployment-ownership.md"
 PIP_BOOTSTRAP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-pip-bootstrap-pin.md"
 TOTAL_RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-total-retrieval-context-boundary.md"
+CACHE_RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-cached-response-validation.md"
 
 require_file() {
   path=$1
@@ -309,7 +310,7 @@ if ! grep -Fq "def is_twilio_doc_url(url)" "$APP" ||
   ! grep -Fq "filtered_urls = []" "$APP" ||
   ! grep -Fq "if is_twilio_doc_url(url) and url not in filtered_urls:" "$APP" ||
   ! grep -Fq "filtered_urls.append(url)" "$APP" ||
-  ! grep -Fq "urls = sorted(filtered_urls)" "$APP"; then
+  ! grep -Fq "return sorted(filtered_urls)" "$APP"; then
   printf '%s\n' "Generated answer links must be filtered by HTTPS Twilio host." >&2
   exit 1
 fi
@@ -349,6 +350,7 @@ if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_wor
   ! grep -Fq "test_serve_public_rejects_path_traversal" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_is_twilio_doc_url_requires_https_twilio_host" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_filters_links_by_twilio_host" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_ask_reapplies_twilio_link_policy_to_cached_response" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_skips_incomplete_metadata" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_truncates_overlong_metadata_text" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_bounds_total_context_and_excludes_unused_links" "$TEST_APP_AUTH" ||
@@ -356,6 +358,16 @@ if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_wor
   ! grep -Fq "test_classify_returns_generic_error_for_unexpected_failures" "$TEST_APP_AUTH" ||
   ! grep -Fq "assert_not_called" "$TEST_APP_AUTH"; then
   printf '%s\n' "Route tests must cover auth short-circuiting and public-file safety." >&2
+  exit 1
+fi
+
+if ! grep -Fq "def filter_twilio_doc_urls(urls):" "$APP" ||
+  [ "$(grep -Fc 'filter_twilio_doc_urls(' "$APP")" -ne 3 ] ||
+  ! grep -Fq "cache_entry.get('response')" "$CACHE" ||
+  ! grep -Fq "cache_entry.get('links')" "$CACHE" ||
+  ! grep -Fq "any(not isinstance(link, str) for link in links)" "$CACHE" ||
+  ! grep -Fq "test_get_cached_response_rejects_malformed_payload_shape" "$TEST_CACHE"; then
+  printf '%s\n' "Cache hits must validate payload shape and reuse the current Twilio citation policy." >&2
   exit 1
 fi
 
@@ -523,6 +535,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$VENDOR_CLEANUP_PLAN" ||
   ! grep -Fq "status: completed" "$VERCEL_PLAN" ||
   ! grep -Fq "status: completed" "$TOTAL_RETRIEVAL_CONTEXT_PLAN" ||
+  ! grep -Fq "status: completed" "$CACHE_RESPONSE_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
@@ -559,6 +572,34 @@ if (
 ):
     raise SystemExit(
         "Total retrieval-context plan must record completed status and actual verification."
+    )
+PY
+
+python - "$CACHE_RESPONSE_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "focused malformed-cache and cached-citation tests passed",
+    "All 44 API tests and every Make gate passed",
+    "Cache payload-validation removal failed",
+    "Cached-link filtering removal failed",
+    "Regression-test removal failed",
+    "hosted pull-request and CodeQL snapshot",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Cached-response plan must record completed status and actual verification."
     )
 PY
 

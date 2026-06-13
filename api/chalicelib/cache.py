@@ -43,6 +43,12 @@ def get_cached_response(query, table=None, now=None):
     if expires_at <= current_time:
         return None
 
+    response = cache_entry.get('response')
+    links = cache_entry.get('links')
+    if (not isinstance(response, str) or not isinstance(links, list) or
+            any(not isinstance(link, str) for link in links)):
+        return None
+
     return cache_entry
 
 
