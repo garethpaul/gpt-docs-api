@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Validated cached response payloads and reapplied HTTPS Twilio citation
+  filtering to cache hits so legacy data cannot bypass current link policy.
 - Enforced one separator-aware 4,000-character total retrieval context budget
   across all Pinecone matches before OpenAI prompt assembly.
 

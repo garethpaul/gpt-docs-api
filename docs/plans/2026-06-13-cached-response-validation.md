@@ -1,6 +1,6 @@
 # Validate Cached Response Data
 
-status: planned
+status: completed
 
 ## Context
 
@@ -47,8 +47,27 @@ required.
 
 ## Work Completed
 
-Pending implementation.
+- Required cache entries to contain a string `response` and a list of string
+  `links`; malformed persisted payloads now become cache misses.
+- Centralized deterministic HTTPS Twilio-host filtering and applied it to both
+  fresh retrieval results and valid cache hits.
+- Added direct cache-shape coverage and an authenticated route regression that
+  removes legacy external, HTTP, and duplicate links without invoking model or
+  cache-write work.
+- Extended the maintained source/test contracts and synchronized the README,
+  vision, and change history.
 
 ## Verification Completed
 
-Pending implementation and verification.
+- The focused malformed-cache and cached-citation tests passed.
+- All 44 API tests and every Make gate passed in an isolated Python 3.10
+  environment with no broken requirements.
+- Credential-isolated Chalice package verification passed with 5,335 archive
+  entries and one scoped Python 3.10 function.
+- Cache payload-validation removal failed all five malformed-shape subtests.
+- Cached-link filtering removal failed the authenticated route regression.
+- Regression-test removal failed the maintained route-test contract.
+- Python compilation, shell syntax, diff checks, intended-file artifact checks,
+  and secret-pattern scans passed.
+- The hosted pull-request and CodeQL snapshot is recorded separately after
+  push; this plan claims only the completed pre-push verification above.

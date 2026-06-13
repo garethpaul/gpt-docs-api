@@ -129,6 +129,51 @@ class AppAuthTests(unittest.TestCase):
         make_query.assert_called_once_with("How?")
         cache.assert_called_once_with("How?", "answer", ["https://twilio.com/docs"])
 
+    def test_ask_reapplies_twilio_link_policy_to_cached_response(self):
+        request = FakeRequest(
+            headers={GPT_DOCS_API_KEY_HEADER: "server-key"},
+            json_body={"query": "How?"},
+        )
+        self.app_module.app.current_request = request
+        cached_response = {
+            "response": "cached answer",
+            "links": [
+                "https://www.twilio.com/docs/b",
+                "https://example.com/?next=twilio.com",
+                "http://www.twilio.com/docs/a",
+                "https://docs.twilio.com/reference",
+                "https://www.twilio.com/docs/b",
+            ],
+        }
+
+        with patch.dict(os.environ, {GPT_DOCS_API_KEY_ENV: "server-key"}):
+            with patch.object(
+                self.app_module,
+                "get_cached_response",
+                return_value=cached_response,
+            ):
+                with patch.object(
+                    self.app_module,
+                    "make_query",
+                    side_effect=AssertionError("should not run"),
+                ) as make_query:
+                    with patch.object(self.app_module, "store_in_cache") as cache:
+                        response = self.app_module.ask_question()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.body,
+            {
+                "response": "cached answer",
+                "links": [
+                    "https://docs.twilio.com/reference",
+                    "https://www.twilio.com/docs/b",
+                ],
+            },
+        )
+        make_query.assert_not_called()
+        cache.assert_not_called()
+
     def test_ask_returns_generic_error_for_unexpected_failures(self):
         request = FakeRequest(
             headers={GPT_DOCS_API_KEY_HEADER: "server-key"},
