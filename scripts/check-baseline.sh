@@ -43,6 +43,7 @@ VERCEL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-vercel-deployment-ownership.md"
 PIP_BOOTSTRAP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-pip-bootstrap-pin.md"
 TOTAL_RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-total-retrieval-context-boundary.md"
 CACHE_RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-cached-response-validation.md"
+GRACEFUL_CACHE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-graceful-cache-bypass.md"
 
 require_file() {
   path=$1
@@ -92,6 +93,8 @@ for path in \
   "docs/plans/2026-06-12-vercel-deployment-ownership.md" \
   "docs/plans/2026-06-12-pip-bootstrap-pin.md" \
   "docs/plans/2026-06-13-total-retrieval-context-boundary.md" \
+  "docs/plans/2026-06-13-cached-response-validation.md" \
+  "docs/plans/2026-06-13-graceful-cache-bypass.md" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
@@ -371,6 +374,99 @@ if ! grep -Fq "def filter_twilio_doc_urls(urls):" "$APP" ||
   exit 1
 fi
 
+python - "$APP" "$TEST_APP_AUTH" <<'PY'
+import ast
+import sys
+from pathlib import Path
+
+app_tree = ast.parse(Path(sys.argv[1]).read_text(encoding="utf-8"))
+test_tree = ast.parse(Path(sys.argv[2]).read_text(encoding="utf-8"))
+ask = next(
+    node for node in app_tree.body
+    if isinstance(node, ast.FunctionDef) and node.name == "ask_question"
+)
+
+def calls_name(node, name):
+    return any(
+        isinstance(item, ast.Call)
+        and isinstance(item.func, ast.Name)
+        and item.func.id == name
+        for item in ast.walk(node)
+    )
+
+def exception_handler(try_node):
+    handlers = [
+        handler for handler in try_node.handlers
+        if isinstance(handler.type, ast.Name) and handler.type.id == "Exception"
+    ]
+    if len(handlers) != 1:
+        raise SystemExit("Cache operations must retain one explicit Exception boundary.")
+    return handlers[0]
+
+def logged_message(handler, expected):
+    return any(
+        isinstance(item, ast.Call)
+        and isinstance(item.func, ast.Attribute)
+        and isinstance(item.func.value, ast.Name)
+        and item.func.value.id == "logger"
+        and item.func.attr == "exception"
+        and len(item.args) == 1
+        and isinstance(item.args[0], ast.Constant)
+        and item.args[0].value == expected
+        for item in ast.walk(handler)
+    )
+
+read_candidates = [
+    node for node in ast.walk(ask)
+    if isinstance(node, ast.Try) and calls_name(node, "get_cached_response")
+]
+write_candidates = [
+    node for node in ast.walk(ask)
+    if isinstance(node, ast.Try) and calls_name(node, "store_in_cache")
+]
+read_try = min(
+    read_candidates,
+    key=lambda node: node.end_lineno - node.lineno,
+    default=None,
+)
+write_try = min(
+    write_candidates,
+    key=lambda node: node.end_lineno - node.lineno,
+    default=None,
+)
+if read_try is None or write_try is None or read_try.lineno >= write_try.lineno:
+    raise SystemExit("Cache reads and writes must remain isolated in request order.")
+
+read_handler = exception_handler(read_try)
+read_sets_miss = any(
+    isinstance(item, ast.Assign)
+    and any(isinstance(target, ast.Name) and target.id == "cache_entry" for target in item.targets)
+    and isinstance(item.value, ast.Constant)
+    and item.value.value is None
+    for item in read_handler.body
+)
+if not read_sets_miss or not logged_message(
+    read_handler, "Failed to read response cache; bypassing cache"
+):
+    raise SystemExit("Cache read failures must be logged and converted to misses.")
+
+write_handler = exception_handler(write_try)
+if not logged_message(
+    write_handler, "Failed to write response cache; returning generated response"
+):
+    raise SystemExit("Cache write failures must be logged without replacing the response.")
+
+test_names = {
+    node.name for node in ast.walk(test_tree) if isinstance(node, ast.FunctionDef)
+}
+required_tests = {
+    "test_ask_bypasses_cache_read_failure",
+    "test_ask_returns_generated_response_when_cache_write_fails",
+}
+if not required_tests.issubset(test_names):
+    raise SystemExit("Cache degradation must retain focused route regressions.")
+PY
+
 if ! grep -Fq "def get_cache_table(resource=None)" "$CACHE" ||
   ! grep -Fq "def get_cached_response(query, table=None, now=None)" "$CACHE" ||
   ! grep -Fq "def store_in_cache(query, response, links, table=None, now=None," "$CACHE" ||
@@ -536,6 +632,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$VERCEL_PLAN" ||
   ! grep -Fq "status: completed" "$TOTAL_RETRIEVAL_CONTEXT_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_RESPONSE_PLAN" ||
+  ! grep -Fq "status: completed" "$GRACEFUL_CACHE_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
@@ -572,6 +669,35 @@ if (
 ):
     raise SystemExit(
         "Total retrieval-context plan must record completed status and actual verification."
+    )
+PY
+
+python - "$GRACEFUL_CACHE_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "focused cache-degradation tests passed",
+    "All 46 API tests and every Make gate passed",
+    "cache-read bypass removal mutation failed",
+    "cache-write isolation removal mutation failed",
+    "read-regression removal mutation failed",
+    "write-regression removal mutation failed",
+    "hosted pull-request and CodeQL snapshot",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Graceful cache-bypass plan must record completed status and actual verification."
     )
 PY
 
@@ -639,6 +765,15 @@ fi
 
 if ! grep -Fq "Mutations accepting expired entries or omitting written TTLs must fail" "$CACHE_EXPIRATION_PLAN"; then
   printf '%s\n' "Cache expiration plan must record completed mutation verification." >&2
+  exit 1
+fi
+
+if ! grep -Fq "DynamoDB response caching best-effort" "$ROOT_DIR/AGENTS.md" ||
+  ! grep -Fq "Cache availability is not required for fresh answers" "$README" ||
+  ! grep -Fq "DynamoDB response caching is best-effort" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "Keep cache backend failures from blocking fresh or already generated answers" "$VISION" ||
+  ! grep -Fq "Made DynamoDB response caching best-effort" "$CHANGES"; then
+  printf '%s\n' "Project guidance must document graceful cache degradation." >&2
   exit 1
 fi
 

@@ -1,6 +1,6 @@
 # Graceful Cache Bypass
 
-status: in_progress
+status: completed
 
 ## Context
 
@@ -43,3 +43,25 @@ unchanged. During a DynamoDB outage, requests can perform fresh paid model work
 instead of failing fast, so operators should monitor cache errors and upstream
 usage. Rollback restores cache failures as route-level 500 responses; no data
 migration exists.
+
+## Work Completed
+
+- Isolated the response-cache read so backend exceptions are logged and treated
+  as cache misses before fresh retrieval.
+- Isolated the response-cache write so backend exceptions are logged after
+  generation without replacing the successful response.
+- Added focused route regressions, AST-backed source contracts, project
+  guidance, and completed-plan evidence requirements.
+
+## Verification Completed
+
+- The focused cache-degradation tests passed.
+- All 46 API tests and every Make gate passed.
+- Python compilation, dependency consistency, shell syntax, `git diff --check`,
+  and intended-file artifact and secret scans passed.
+- The cache-read bypass removal mutation failed.
+- The cache-write isolation removal mutation failed.
+- The read-regression removal mutation failed.
+- The write-regression removal mutation failed.
+- The hosted pull-request and CodeQL snapshot is recorded after the
+  implementation commit using bounded exact-head queries without polling.
