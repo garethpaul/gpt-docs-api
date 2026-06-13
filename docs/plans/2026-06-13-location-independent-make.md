@@ -1,6 +1,6 @@
 # Location-Independent GPT Docs Verification
 
-status: planned
+status: completed
 
 ## Context
 
@@ -40,8 +40,32 @@ caller-relative recipes; no runtime state or persistent migration exists.
 
 ## Work Completed
 
-Pending implementation.
+- Derived `ROOT` from the loaded `Makefile` and anchored test and compile
+  recipes to that directory.
+- Invoked baseline and Chalice package verification through absolute rooted
+  script paths.
+- Added baseline contracts for the rooted command surface, completed plan
+  evidence, and operator guidance.
+- Documented external-directory behavior in the README and changelog without
+  changing API, cache, extension, dependency, IAM, deployment, or workflow
+  behavior.
 
 ## Verification Completed
 
-Pending implementation and validation. Run `make check` before completion.
+- Root and external-directory Make gates passed for `test`, `compile`,
+  `check`, `lint`, `build`, and `verify`; each test-bearing gate ran all 46 API
+  tests without live credentials.
+- Local package-check reached the explicit Chalice availability guard
+  and exited before package construction because the `chalice` command is not
+  installed in this checkout environment. The unchanged hosted workflow owns
+  the dependency-backed package build and archive inspection.
+- The root-derivation mutation failed.
+- The test-command mutation failed.
+- The compile-command mutation failed.
+- The checker-path mutation failed.
+- The package-check-path mutation failed.
+- The plan-evidence mutation failed.
+- The documentation mutation failed.
+- Shell syntax, Python compilation, pinned dependency contracts, diff hygiene,
+  intended-path review, secret scanning, and generated-artifact inspection
+  passed.

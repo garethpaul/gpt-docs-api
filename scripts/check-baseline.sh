@@ -44,6 +44,7 @@ PIP_BOOTSTRAP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-pip-bootstrap-pin.md"
 TOTAL_RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-total-retrieval-context-boundary.md"
 CACHE_RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-cached-response-validation.md"
 GRACEFUL_CACHE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-graceful-cache-bypass.md"
+LOCATION_INDEPENDENT_MAKE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-location-independent-make.md"
 
 require_file() {
   path=$1
@@ -95,6 +96,7 @@ for path in \
   "docs/plans/2026-06-13-total-retrieval-context-boundary.md" \
   "docs/plans/2026-06-13-cached-response-validation.md" \
   "docs/plans/2026-06-13-graceful-cache-bypass.md" \
+  "docs/plans/2026-06-13-location-independent-make.md" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
@@ -151,6 +153,18 @@ PY
 for target in "lint:" "test:" "build: compile" "compile:" "check:" "package-check:" "verify: test compile check"; do
   if ! grep -Fq "$target" "$MAKEFILE"; then
     printf '%s\n' "Makefile must expose target: $target" >&2
+    exit 1
+  fi
+done
+
+for make_contract in \
+  'ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))' \
+  'cd "$(ROOT)" && PYTHONPATH=api python -m unittest discover -s api/tests' \
+  'cd "$(ROOT)" && python -m compileall -q api/app.py api/chalicelib api/tests' \
+  '"$(ROOT)/scripts/check-baseline.sh"' \
+  '"$(ROOT)/scripts/verify-chalice-package.sh"'; do
+  if ! grep -Fq "$make_contract" "$MAKEFILE"; then
+    printf '%s\n' "Makefile must preserve location-independent command: $make_contract" >&2
     exit 1
   fi
 done
@@ -613,6 +627,14 @@ if ! grep -Fq "disabled unintended Vercel Git deployments" "$CHANGES"; then
   exit 1
 fi
 
+if ! grep -Fq "absolute Makefile path can be invoked from any working directory" "$README" ||
+  ! grep -Fq "package-verification scope" "$README" ||
+  ! grep -Fq "Make verification target derive the checkout root" "$CHANGES" ||
+  ! grep -Fq "external directories" "$CHANGES"; then
+  printf '%s\n' "Project guidance must document location-independent Make verification." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CHECK_PLAN" ||
   ! grep -Fq "status: completed" "$AUTH_PLAN" ||
@@ -633,10 +655,42 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$TOTAL_RETRIEVAL_CONTEXT_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_RESPONSE_PLAN" ||
   ! grep -Fq "status: completed" "$GRACEFUL_CACHE_PLAN" ||
+  ! grep -Fq "status: completed" "$LOCATION_INDEPENDENT_MAKE_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
 fi
+
+python - "$LOCATION_INDEPENDENT_MAKE_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "Root and external-directory Make gates passed",
+    "package-check reached the explicit Chalice availability guard",
+    "root-derivation mutation failed",
+    "test-command mutation failed",
+    "compile-command mutation failed",
+    "checker-path mutation failed",
+    "package-check-path mutation failed",
+    "plan-evidence mutation failed",
+    "documentation mutation failed",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Location-independent Make plan must record completed status and actual verification."
+    )
+PY
 
 if ! grep -Fq "Verified Chalice deployment package" "$VENDOR_CLEANUP_PLAN" ||
   ! grep -Fq "Hostile mutations" "$VENDOR_CLEANUP_PLAN"; then
