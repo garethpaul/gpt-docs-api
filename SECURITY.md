@@ -42,8 +42,10 @@ For web services, APIs, sockets, or scraping workflows, prioritize reports invol
 
 For AI-generated responses, validate model output schemas before exposing values to callers. The `/classify/builder` response must remain limited to finite numeric `with_code`, `minimal_code`, and `no_code` weights.
 
-Retrieved document context should stay bounded before it is assembled into
-generated-answer prompts.
+Retrieved document context should share one separator-aware total length budget
+across all provider matches before it is assembled into generated-answer
+prompts. Links for excluded context should not be returned as supporting
+sources.
 Generated-answer cache entries should carry a bounded `expires_at` lifetime;
 enable DynamoDB TTL on that attribute so stale query data is physically removed.
 Cache partition keys use a namespaced SHA-256 digest rather than raw user

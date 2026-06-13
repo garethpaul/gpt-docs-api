@@ -344,6 +344,70 @@ class AppAuthTests(unittest.TestCase):
             "x" * self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH + "\n\n-----\n\nHow?",
         )
 
+    def test_make_query_bounds_total_context_and_excludes_unused_links(self):
+        first_context = "a" * 1000
+        second_context = "b" * self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH
+
+        class FakeIndex:
+            def query(self, *args, **kwargs):
+                return {
+                    "matches": [
+                        {
+                            "metadata": {
+                                "text": first_context,
+                                "url": "https://www.twilio.com/docs/first",
+                            }
+                        },
+                        {
+                            "metadata": {
+                                "text": second_context,
+                                "url": "https://www.twilio.com/docs/second",
+                            }
+                        },
+                        {
+                            "metadata": {
+                                "text": "excluded context",
+                                "url": "https://www.twilio.com/docs/excluded",
+                            }
+                        },
+                    ]
+                }
+
+        with patch.object(self.app_module, "get_embeddings", return_value=[0.1]):
+            with patch.object(self.app_module, "get_index", return_value=FakeIndex()):
+                with patch.object(
+                    self.app_module,
+                    "generate_response",
+                    return_value="answer",
+                ) as generate_response:
+                    response, links = self.app_module.make_query("How?")
+
+        self.assertEqual(response, "answer")
+        self.assertEqual(
+            links,
+            [
+                "https://www.twilio.com/docs/first",
+                "https://www.twilio.com/docs/second",
+            ],
+        )
+        augmented_query = generate_response.call_args[0][0]
+        context_text, query = augmented_query.split("\n\n-----\n\n", 1)
+        self.assertEqual(query, "How?")
+        self.assertEqual(
+            len(context_text),
+            self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH,
+        )
+        self.assertEqual(
+            context_text,
+            first_context
+            + self.app_module.RETRIEVAL_CONTEXT_SEPARATOR
+            + "b" * (
+                self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH
+                - len(first_context)
+                - len(self.app_module.RETRIEVAL_CONTEXT_SEPARATOR)
+            ),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
