@@ -288,7 +288,11 @@ def ask_question():
             return Response(body={'error': str(error)}, status_code=400)
 
         # Check cache for a matching query
-        cache_entry = get_cached_response(query)
+        try:
+            cache_entry = get_cached_response(query)
+        except Exception:
+            logger.exception('Failed to read response cache; bypassing cache')
+            cache_entry = None
         if cache_entry:
             return Response(body={'response': cache_entry['response'],
                                   'links': filter_twilio_doc_urls(
@@ -299,7 +303,12 @@ def ask_question():
         response, links = make_query(query)
 
         # Push the cache entry to the cache
-        store_in_cache(query, response, links)
+        try:
+            store_in_cache(query, response, links)
+        except Exception:
+            logger.exception(
+                'Failed to write response cache; returning generated response'
+            )
 
         # Create a JSON response with the response and links
         resp = Response(body={'response': response,

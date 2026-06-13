@@ -82,6 +82,11 @@ The maintained `api/iam-policy.json` grants runtime cache access only through
 standard CloudWatch Logs writes required by Lambda. Package verification must
 confirm those permissions are present in the generated SAM role.
 
+DynamoDB response caching is best-effort. A cache read failure must not block
+fresh authenticated retrieval, and a cache write failure must not replace a
+successfully generated answer with a route-level error. Operators should alert
+on cache exception logs because bypassed reads can increase paid upstream work.
+
 ## Safe Research Guidelines
 
 Good-faith research is welcome when it stays within these boundaries:

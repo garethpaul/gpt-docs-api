@@ -2,6 +2,8 @@
 
 ## 2026-06-13
 
+- Made DynamoDB response caching best-effort so transient read failures bypass
+  the cache and write failures do not discard successfully generated answers.
 - Validated cached response payloads and reapplied HTTPS Twilio citation
   filtering to cache hits so legacy data cannot bypass current link policy.
 - Enforced one separator-aware 4,000-character total retrieval context budget

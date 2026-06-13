@@ -31,6 +31,7 @@ Priority:
 - Preserve fixed-size SHA-256 cache keys so raw user queries are not DynamoDB
   partition-key material
 - Treat malformed cache payloads as misses and revalidate cached citations
+- Keep cache backend failures from blocking fresh or already generated answers
 - Keep unexpected route failures behind generic 500 errors
 - Keep request validation bounded by a maximum query length before model work
 - Keep the classification weight schema explicit and numeric before returning
@@ -73,6 +74,8 @@ Contribution rules:
 - Keep cache expiration enforced before returning generated-answer entries.
 - Keep cache reads and writes on the same namespaced query digest while
   retaining the existing DynamoDB table and `query_string` attribute.
+- Keep cache reads and writes best-effort while logging backend failures for
+  operational monitoring.
 - Keep unexpected route failures logged server-side while returning generic 500
   errors to callers.
 - Keep the maximum query length guard in request validation.
