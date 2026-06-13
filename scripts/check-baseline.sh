@@ -41,6 +41,7 @@ PACKAGE_CHECK="$ROOT_DIR/scripts/verify-chalice-package.sh"
 VERCEL_CONFIG="$ROOT_DIR/vercel.json"
 VERCEL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-vercel-deployment-ownership.md"
 PIP_BOOTSTRAP_PLAN="$ROOT_DIR/docs/plans/2026-06-12-pip-bootstrap-pin.md"
+TOTAL_RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-total-retrieval-context-boundary.md"
 
 require_file() {
   path=$1
@@ -89,6 +90,7 @@ for path in \
   "docs/plans/2026-06-12-chalice-vendor-cleanup.md" \
   "docs/plans/2026-06-12-vercel-deployment-ownership.md" \
   "docs/plans/2026-06-12-pip-bootstrap-pin.md" \
+  "docs/plans/2026-06-13-total-retrieval-context-boundary.md" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
@@ -323,6 +325,16 @@ if ! grep -Fq "def metadata_text_and_url(item)" "$APP" ||
   exit 1
 fi
 
+if ! grep -Fq 'RETRIEVAL_CONTEXT_SEPARATOR = "\n\n---\n\n"' "$APP" ||
+  ! grep -Fq "remaining_context_length = MAX_RETRIEVAL_CONTEXT_LENGTH" "$APP" ||
+  ! grep -Fq "available_length = remaining_context_length - separator_length" "$APP" ||
+  ! grep -Fq "bounded_context = context[:available_length]" "$APP" ||
+  ! grep -Fq "remaining_context_length -= separator_length + len(bounded_context)" "$APP" ||
+  ! grep -Fq "if remaining_context_length == 0:" "$APP"; then
+  printf '%s\n' "Retrieval context must enforce one separator-aware total prompt budget." >&2
+  exit 1
+fi
+
 if ! grep -Fq "logger.exception('Failed to process ask request')" "$APP" ||
   ! grep -Fq "logger.exception('Failed to process classify request')" "$APP" ||
   ! grep -Fq "{'error': 'Internal server error'}" "$APP"; then
@@ -339,6 +351,7 @@ if ! grep -Fq "test_ask_rejects_unauthenticated_callers_before_body_or_model_wor
   ! grep -Fq "test_make_query_filters_links_by_twilio_host" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_skips_incomplete_metadata" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_make_query_truncates_overlong_metadata_text" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_make_query_bounds_total_context_and_excludes_unused_links" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_ask_returns_generic_error_for_unexpected_failures" "$TEST_APP_AUTH" ||
   ! grep -Fq "test_classify_returns_generic_error_for_unexpected_failures" "$TEST_APP_AUTH" ||
   ! grep -Fq "assert_not_called" "$TEST_APP_AUTH"; then
@@ -427,6 +440,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "Twilio link host filtering" "$README" ||
   ! grep -Fq "retrieval metadata guard" "$README" ||
   ! grep -Fq "retrieval context length" "$README" ||
+  ! grep -Fq "total retrieval context budget" "$README" ||
   ! grep -Fq "expires_at" "$README" ||
   ! grep -Fq "fixed-size SHA-256 identity" "$README" ||
   ! grep -Fq "generic 500 errors" "$README" ||
@@ -449,6 +463,7 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   ! grep -Fq "Twilio link host filtering" "$VISION" ||
   ! grep -Fq "retrieval metadata guard" "$VISION" ||
   ! grep -Fq "retrieval context length" "$VISION" ||
+  ! grep -Fq "total retrieval context budget" "$VISION" ||
   ! grep -Fq "cache expiration" "$VISION" ||
   ! grep -Fq "fixed-size SHA-256 cache keys" "$VISION" ||
   ! grep -Fq "text-only extension rendering" "$VISION" ||
@@ -475,6 +490,7 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "Twilio link host filtering" "$CHANGES" ||
   ! grep -Fq "retrieval metadata guard" "$CHANGES" ||
   ! grep -Fq "retrieval context length" "$CHANGES" ||
+  ! grep -Fq "total retrieval context budget" "$CHANGES" ||
   ! grep -Fq "cache entries" "$CHANGES" ||
   ! grep -Fq "SHA-256 identities" "$CHANGES" ||
   ! grep -Fq "text-only DOM rendering" "$CHANGES" ||
@@ -506,6 +522,7 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$EXTENSION_RENDERING_PLAN" ||
   ! grep -Fq "status: completed" "$VENDOR_CLEANUP_PLAN" ||
   ! grep -Fq "status: completed" "$VERCEL_PLAN" ||
+  ! grep -Fq "status: completed" "$TOTAL_RETRIEVAL_CONTEXT_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
@@ -516,6 +533,34 @@ if ! grep -Fq "Verified Chalice deployment package" "$VENDOR_CLEANUP_PLAN" ||
   printf '%s\n' "Chalice vendor cleanup plan must record completed package and mutation evidence." >&2
   exit 1
 fi
+
+python - "$TOTAL_RETRIEVAL_CONTEXT_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "focused aggregate-context test passed",
+    "all API tests and every Make gate passed",
+    "aggregate-budget removal mutation failed",
+    "separator-accounting mutation failed",
+    "regression-test removal mutation failed",
+    "hosted pull-request and CodeQL snapshot",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Total retrieval-context plan must record completed status and actual verification."
+    )
+PY
 
 python - "$VERCEL_PLAN" <<'PY'
 import re

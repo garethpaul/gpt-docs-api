@@ -1,6 +1,6 @@
 # Total Retrieval Context Boundary
 
-status: in_progress
+status: completed
 
 ## Context
 
@@ -40,3 +40,26 @@ Queries with more than 4,000 total retrieval characters will send less provider
 context to OpenAI. Match order and the original user query remain unchanged.
 Rollback restores the multiplied context size; there is no stored-data or API
 schema migration.
+
+## Work Completed
+
+- Added a remaining-length budget shared across every accepted Pinecone match.
+- Counted inter-context separators against the same 4,000-character budget.
+- Truncated only the final included context and stopped before later matches.
+- Returned links only for contexts included in the generated prompt.
+- Added focused multi-match coverage and synchronized the canonical baseline and
+  project guidance.
+
+## Verification Completed
+
+- The focused aggregate-context test passed.
+- The aggregate-budget removal mutation failed the total-budget contract.
+- The separator-accounting mutation failed the total-budget contract.
+- The regression-test removal mutation failed the route-test contract.
+- All 42 API tests passed.
+- The isolated Python 3.10 dependency check and Chalice package verification
+  passed with 5,335 archive entries and one scoped function.
+- The all API tests and every Make gate passed under the isolated Python 3.10
+  environment.
+- The hosted pull-request and CodeQL snapshot is recorded separately after push;
+  this plan claims only the completed pre-push verification above.

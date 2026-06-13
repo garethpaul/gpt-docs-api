@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-13
+
+- Enforced one separator-aware 4,000-character total retrieval context budget
+  across all Pinecone matches before OpenAI prompt assembly.
+
 ## 2026-06-12
 
 - Pinned the hosted pip bootstrap to 26.1.2 and added contracts rejecting
