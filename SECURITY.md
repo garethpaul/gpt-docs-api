@@ -70,8 +70,9 @@ Dependency updates should come from trusted package managers and should keep loc
 The hosted dependency job uses a pinned installer bootstrap. Review its Python
 3.10 compatibility and official release metadata whenever that pin changes.
 
-Chalice deployment dependencies are installed from the version-controlled
-`api/requirements.txt` declarations during package construction. Do not commit
+Chalice deployment dependencies use hash-required deployment dependency
+installation from the generated `api/requirements.txt` lock during package
+construction; the reviewed direct pins remain in `api/requirements.in`. Do not commit
 `api/vendor/`, interpreter-specific extension modules, Python bytecode, or
 generated deployment archives. Run `make package-check` in an environment with
 the API requirements installed to construct and inspect the deployment package

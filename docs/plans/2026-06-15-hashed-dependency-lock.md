@@ -1,7 +1,7 @@
 ---
 title: Hashed Deployment Dependency Lock
 type: security
-status: in_progress
+status: completed
 date: 2026-06-15
 execution: code
 ---
@@ -56,8 +56,9 @@ changing the direct package choices.
   concise source of the four reviewed direct dependencies, while
   `api/requirements.txt` becomes generated output for installation and
   packaging.
-- **Lock for the deployment target:** generate for CPython 3.10 on x86-64
-  manylinux rather than the developer's current interpreter or host platform.
+- **Lock for the deployment target and review date:** generate for CPython 3.10
+  on x86-64 manylinux with a 2026-06-15 upload cutoff rather than the
+  developer's current interpreter, host platform, or a moving package index.
 - **Authenticate distributions at install time:** use pip's hash-required mode
   so exact versions alone cannot silently accept a replaced or different
   artifact.
@@ -210,3 +211,21 @@ isolated hostile mutations fail for their intended contract messages.
   on workflow text.
 - Hash-required installation increases maintenance cost when dependencies are
   updated; the documented regeneration command must remain deterministic.
+
+---
+
+## Verification Completed
+
+- The lock checker reported 47 exact, hash-addressed packages and deterministic
+  regeneration for the declared Python 3.10 manylinux target.
+- A clean Python 3.10 hash-required install passed, followed by `pip check`.
+- The temporary Chalice package gate passed with 5,335 archive entries, one
+  Python 3.10 function, required runtime packages, and scoped cache access.
+- Repository and external-directory Make gates passed.
+- Ten hostile mutations failed for direct-input drift, missing hashes,
+  malformed hash continuation, truncation, target drift, unhashed CI
+  installation, package hash bypass, package lock bypass, guidance drift, and
+  plan evidence.
+- Diff, generated-artifact, conflict-marker, mode, and changed-line credential
+  audits passed.
+- No live AWS, OpenAI, Pinecone, Twilio, or API Gateway operations were executed.

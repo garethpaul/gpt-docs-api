@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-15
+
+- Added a generated, hash-addressed Python 3.10 deployment dependency lock and
+  required hash verification in hosted installs and Chalice package builds.
+
 ## 2026-06-13
 
 - Made every Make verification target derive the checkout root so test,

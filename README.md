@@ -71,8 +71,10 @@ that remote content uses text-only rendering with HTTP(S)-only source links.
 GitHub Actions installs the pinned API requirements on Python 3.10, verifies
 dependency consistency, constructs and inspects a real Chalice deployment
 package, checks out without persisting the workflow token, and runs the same
-offline `make check` baseline. Deployable dependencies come from
-`api/requirements.txt`; generated `api/vendor/` environments are not tracked.
+offline `make check` baseline. Deployable dependencies come from the
+hash-addressed Python 3.10 dependency lock in `api/requirements.txt`, with
+direct intent in `api/requirements.in`; generated `api/vendor/` environments
+are not tracked. Regenerate the lock with the exact command in its header.
 The job bootstraps exact `pip 26.1.2` before dependency installation, so the
 installer is not a moving workflow input.
 The package verifier also confirms the generated role can read and write only
