@@ -1,7 +1,7 @@
 ---
 title: Binary-Only Dependency Artifacts
 type: security
-status: planned
+status: completed
 date: 2026-06-15
 execution: code
 ---
@@ -52,3 +52,26 @@ the build environment rather than a reviewed binary artifact.
 - Do not claim binary wheels are reproducible builds; this boundary prevents
   unreviewed local source builds during verified installation and packaging.
 - Do not merge or close stacked pull requests without owner authorization.
+
+## Status: Completed
+
+## Work Completed
+
+- Required binary-only dependency resolution in the hosted clean install and
+  credential-free Chalice package build while retaining hash verification.
+- Added static contracts that reject source-build fallback at either resolver
+  entry point.
+- Updated maintained supply-chain guidance and completed-plan evidence.
+
+## Verification Completed
+
+- A clean Python 3.10 binary-only install passed with hash verification and
+  `pip check`.
+- The repository and external-directory `make check` passed all 46 API tests,
+  compile checks, lock contracts, and extension checks.
+- The credential-free Chalice package gate passed and retained the reviewed
+  Python 3.10 runtime dependencies and scoped IAM policy.
+- Six hostile mutations failed for CI binary policy, package binary policy,
+  hash preservation, package environment preservation, guidance, and plan evidence.
+- Exact diff, generated-artifact, conflict-marker, and secret-pattern audits passed.
+- No live AWS, OpenAI, Pinecone, Twilio, or API Gateway operations were executed.

@@ -75,6 +75,8 @@ offline `make check` baseline. Deployable dependencies come from the
 hash-addressed Python 3.10 dependency lock in `api/requirements.txt`, with
 direct intent in `api/requirements.in`; generated `api/vendor/` environments
 are not tracked. Regenerate the lock with the exact command in its header.
+Hosted installation and Chalice packaging accept binary wheels only, preventing
+verified source archives from producing unreviewed local build artifacts.
 The job bootstraps exact `pip 26.1.2` before dependency installation, so the
 installer is not a moving workflow input.
 The package verifier also confirms the generated role can read and write only

@@ -2,6 +2,7 @@
 
 ## 2026-06-15
 
+- Required binary-only dependency artifacts in hosted installation and Chalice packaging.
 - Added a generated, hash-addressed Python 3.10 deployment dependency lock and
   required hash verification in hosted installs and Chalice package builds.
 

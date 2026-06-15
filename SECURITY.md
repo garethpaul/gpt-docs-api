@@ -72,7 +72,8 @@ The hosted dependency job uses a pinned installer bootstrap. Review its Python
 
 Chalice deployment dependencies use hash-required deployment dependency
 installation from the generated `api/requirements.txt` lock during package
-construction; the reviewed direct pins remain in `api/requirements.in`. Do not commit
+construction. Hosted and package verification also require binary-only installation
+so source archives cannot trigger local dependency builds; the reviewed direct pins remain in `api/requirements.in`. Do not commit
 `api/vendor/`, interpreter-specific extension modules, Python bytecode, or
 generated deployment archives. Run `make package-check` in an environment with
 the API requirements installed to construct and inspect the deployment package

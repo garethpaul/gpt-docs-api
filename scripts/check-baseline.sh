@@ -48,6 +48,7 @@ GRACEFUL_CACHE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-graceful-cache-bypass.md"
 LOCATION_INDEPENDENT_MAKE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-location-independent-make.md"
 DEPENDENCY_LOCK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-hashed-dependency-lock.md"
 DEPENDENCY_LOCK_CHECK="$ROOT_DIR/scripts/check-dependency-lock.py"
+BINARY_ARTIFACT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-binary-only-dependency-artifacts.md"
 
 require_file() {
   path=$1
@@ -102,6 +103,7 @@ for path in \
   "docs/plans/2026-06-13-graceful-cache-bypass.md" \
   "docs/plans/2026-06-13-location-independent-make.md" \
   "docs/plans/2026-06-15-hashed-dependency-lock.md" \
+  "docs/plans/2026-06-15-binary-only-dependency-artifacts.md" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
@@ -223,7 +225,7 @@ if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.in" "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
   ! grep -Fq "python -m pip install --upgrade pip==26.1.2" "$CI_WORKFLOW" ||
-  ! grep -Fq "python -m pip install --require-hashes -r api/requirements.txt" "$CI_WORKFLOW" ||
+  ! grep -Fq "python -m pip install --require-hashes --only-binary=:all: -r api/requirements.txt" "$CI_WORKFLOW" ||
   ! grep -Fq "python -m pip check" "$CI_WORKFLOW" ||
   ! grep -Fq "make package-check" "$CI_WORKFLOW" ||
   ! grep -Fq "make check" "$CI_WORKFLOW"; then
@@ -270,6 +272,7 @@ if ! grep -Fq "scripts/verify-chalice-package.sh" "$MAKEFILE" ||
   ! grep -Fq "AWS_SHARED_CREDENTIALS_FILE=/dev/null" "$PACKAGE_CHECK" ||
   ! grep -Fq "PYTHONNOUSERSITE=1" "$PACKAGE_CHECK" ||
   ! grep -Fq "PIP_REQUIRE_HASHES=1" "$PACKAGE_CHECK" ||
+  ! grep -Fq "PIP_ONLY_BINARY=:all:" "$PACKAGE_CHECK" ||
   ! grep -Fq '"$API_DIR/requirements.in"' "$PACKAGE_CHECK" ||
   ! grep -Fq '"$API_DIR/requirements.txt"' "$PACKAGE_CHECK" ||
   ! grep -Fq '"autogen_policy": false' "$PACKAGE_CHECK" ||
@@ -862,12 +865,42 @@ if (
     raise SystemExit("Hashed dependency-lock plan must record completed verification.")
 PY
 
+python3 - "$BINARY_ARTIFACT_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+frontmatter = plan.split("---", 2)[1]
+statuses = re.findall(r"^status: .+$", frontmatter, flags=re.MULTILINE)
+required = (
+    "clean Python 3.10 binary-only install passed",
+    "repository and external-directory `make check` passed",
+    "credential-free Chalice package gate passed",
+    "Six hostile mutations failed",
+    "No live AWS, OpenAI, Pinecone, Twilio, or API Gateway operations were executed",
+)
+if statuses != ["status: completed"] or any(item not in plan for item in required):
+    raise SystemExit(
+        "Binary-only dependency artifact plan must record completed verification."
+    )
+PY
+
 if ! grep -Fq "hash-addressed Python 3.10 dependency lock" "$README" ||
   ! grep -Fq "Chalice deployment dependencies use hash-required deployment dependency" "$ROOT_DIR/SECURITY.md" ||
   ! grep -Fq "Keep deployment dependencies exact and hash-addressed" "$VISION" ||
   ! grep -Fq "Added a generated, hash-addressed Python 3.10 deployment dependency lock" "$CHANGES" ||
   ! grep -Fq "Regenerate the hash-addressed Python 3.10 deployment lock" "$ROOT_DIR/AGENTS.md"; then
   printf '%s\n' "Project guidance must document the hashed dependency lock." >&2
+  exit 1
+fi
+
+if ! grep -Fq "binary wheels only" "$README" ||
+  ! grep -Fq "binary-only installation" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "binary deployment artifacts" "$VISION" ||
+  ! grep -Fq "Required binary-only dependency artifacts" "$CHANGES" ||
+  ! grep -Fq -- "--only-binary=:all:" "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Project guidance must document binary-only dependency resolution." >&2
   exit 1
 fi
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"

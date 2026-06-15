@@ -40,6 +40,7 @@ Priority:
 - Keep deployment dependencies exact and hash-addressed in the generated
   Python 3.10 lock, with direct intent separated and no checked-in
   interpreter-specific `api/vendor/` environment
+- Require reviewed binary deployment artifacts instead of local source builds
 - Keep the generated Lambda role limited to `gpt_docs` cache reads/writes and
   standard CloudWatch Logs delivery
 

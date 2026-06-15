@@ -15,7 +15,7 @@
 
 ## Development commands
 
-- Install dependencies: `python -m pip install --require-hashes -r api/requirements.txt`
+- Install dependencies: `python -m pip install --require-hashes --only-binary=:all: -r api/requirements.txt`
 - Full baseline: `make check`
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
@@ -56,6 +56,7 @@
 - Regenerate the hash-addressed Python 3.10 deployment lock from
   `api/requirements.in` with the exact `uv pip compile` command recorded in the
   lock header; do not hand-edit resolved versions or hashes.
+- Preserve `--only-binary=:all:` for verified installation and package builds.
 - Keep `api/iam-policy.json` limited to the `gpt_docs` cache operations and
   CloudWatch Logs actions required by the Lambda runtime.
 
