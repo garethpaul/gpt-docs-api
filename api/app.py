@@ -133,9 +133,15 @@ def metadata_text_and_url(item):
 
 def retrieval_matches(response):
     """Return Pinecone matches only from a supported collection shape."""
-    matches = response.get('matches', []) if hasattr(response, 'get') else getattr(
-        response, 'matches', []
-    )
+    try:
+        get_matches = getattr(response, 'get', None)
+        if callable(get_matches):
+            matches = get_matches('matches', [])
+        else:
+            matches = getattr(response, 'matches', [])
+    except Exception:
+        return ()
+
     if not isinstance(matches, (list, tuple)):
         return ()
     return matches

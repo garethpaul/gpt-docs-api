@@ -50,6 +50,7 @@ DEPENDENCY_LOCK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-hashed-dependency-lock.md"
 DEPENDENCY_LOCK_CHECK="$ROOT_DIR/scripts/check-dependency-lock.py"
 BINARY_ARTIFACT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-binary-only-dependency-artifacts.md"
 RETRIEVAL_MATCHES_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-matches-container.md"
+RETRIEVAL_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-response-accessor.md"
 
 require_file() {
   path=$1
@@ -106,6 +107,7 @@ for path in \
   "docs/plans/2026-06-15-hashed-dependency-lock.md" \
   "docs/plans/2026-06-15-binary-only-dependency-artifacts.md" \
   "docs/plans/2026-06-16-retrieval-matches-container.md" \
+  "docs/plans/2026-06-16-retrieval-response-accessor.md" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
@@ -359,6 +361,36 @@ if ! grep -Fq "def retrieval_matches(response)" "$APP" ||
   printf '%s\n' "Retrieval matches containers must be normalized before metadata iteration." >&2
   exit 1
 fi
+
+python3 - "$APP" "$TEST_APP_AUTH" <<'PY'
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1]).read_text(encoding="utf-8")
+tests = Path(sys.argv[2]).read_text(encoding="utf-8")
+helper = source[source.index("def retrieval_matches(response)"):source.index("@app.route('/public/")]
+required_source = (
+    "get_matches = getattr(response, 'get', None)",
+    "if callable(get_matches):",
+    "matches = get_matches('matches', [])",
+    "matches = getattr(response, 'matches', [])",
+    "except Exception:",
+    "return ()",
+)
+required_tests = (
+    "test_retrieval_matches_handles_unsupported_accessors",
+    "test_make_query_uses_query_only_prompt_after_accessor_failure",
+    "NonCallableGetResponse",
+    "RaisingGetResponse",
+    "RaisingMatchesResponse",
+)
+if any(contract not in helper for contract in required_source):
+    raise SystemExit("Retrieval response access must fail safely before container validation.")
+if "hasattr(response, 'get')" in helper:
+    raise SystemExit("Retrieval response access must not call an unverified get attribute.")
+if any(contract not in tests for contract in required_tests):
+    raise SystemExit("Retrieval response accessor regressions must remain registered.")
+PY
 
 if ! grep -Fq 'RETRIEVAL_CONTEXT_SEPARATOR = "\n\n---\n\n"' "$APP" ||
   ! grep -Fq "remaining_context_length = MAX_RETRIEVAL_CONTEXT_LENGTH" "$APP" ||
@@ -922,6 +954,15 @@ if ! grep -Fq "Malformed retrieval matches containers" "$README" ||
   ! grep -Fq "Malformed retrieval matches containers" "$ROOT_DIR/AGENTS.md" ||
   ! grep -Fq "Normalized malformed retrieval matches containers" "$CHANGES"; then
   printf '%s\n' "Project guidance must document retrieval matches-container normalization." >&2
+  exit 1
+fi
+
+if ! grep -Fq "Unusable retrieval response accessors normalize to no matches" "$README" ||
+  ! grep -Fq "Unusable retrieval response accessors must normalize to no matches" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "Unusable retrieval response accessors normalize to no matches" "$VISION" ||
+  ! grep -Fq "Unusable retrieval response accessors must normalize to no matches" "$ROOT_DIR/AGENTS.md" ||
+  ! grep -Fq "Normalized non-callable or failing retrieval response accessors" "$CHANGES"; then
+  printf '%s\n' "Project guidance must document retrieval response accessor normalization." >&2
   exit 1
 fi
 

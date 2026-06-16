@@ -51,6 +51,8 @@
 - Keep DynamoDB response caching best-effort: cache read failures must continue to fresh retrieval, and cache write failures must not discard a generated response.
 - Malformed retrieval matches containers must normalize to no matches before
   per-item metadata validation and answer generation.
+- Unusable retrieval response accessors must normalize to no matches before
+  container validation; preserve callable mapping and object attribute forms.
 - Keep the classification weight schema limited to numeric `with_code`, `minimal_code`, and `no_code` values.
 - Chalice installs deployable dependencies from `api/requirements.txt`; do not
   commit generated `api/vendor/` content, Python bytecode, caches, or package

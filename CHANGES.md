@@ -2,6 +2,8 @@
 
 ## 2026-06-16
 
+- Normalized non-callable or failing retrieval response accessors to no matches
+  while preserving mapping and object response compatibility.
 - Normalized malformed retrieval matches containers to an empty collection
   before per-item metadata validation.
 
