@@ -1,7 +1,7 @@
 ---
 title: Retrieval Matches Container
 date: 2026-06-16
-status: active
+status: completed
 execution: code
 ---
 
@@ -51,8 +51,23 @@ OpenAI, Pinecone, DynamoDB, or AWS calls.
 
 ## Work Completed
 
-Pending implementation.
+- Added `retrieval_matches` to accept list and tuple collections while
+  normalizing malformed top-level provider values to an empty tuple.
+- Routed `make_query` through the helper and added malformed-container
+  characterization, static, guidance, and completed-plan contracts.
 
 ## Verification Completed
 
-Pending implementation and validation.
+- The focused retrieval tests and complete API suite passed with 48 tests.
+- All four Make gates passed in the isolated baseline mirror and final worktree.
+- The external-directory Make gate passed through the absolute Makefile path.
+- The container-guard mutation failed after removing the shape check.
+- The mapping-acceptance mutation failed after treating mappings as match
+  collections.
+- The focused-test contract mutation failed after renaming the malformed
+  matches characterization.
+- The plan-status mutation failed after restoring an active status.
+- The plan-evidence mutation failed after removing the guard-mutation result.
+- Compile, dependency-lock, extension-rendering, diff, generated-artifact,
+  credential, conflict-marker, file-mode, and upstream audits completed before
+  commit.

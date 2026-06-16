@@ -131,6 +131,16 @@ def metadata_text_and_url(item):
     return context, url
 
 
+def retrieval_matches(response):
+    """Return Pinecone matches only from a supported collection shape."""
+    matches = response.get('matches', []) if hasattr(response, 'get') else getattr(
+        response, 'matches', []
+    )
+    if not isinstance(matches, (list, tuple)):
+        return ()
+    return matches
+
+
 @app.route('/public/{filename}', methods=['GET'])
 def serve_public(filename):
     """
@@ -220,9 +230,7 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     remaining_context_length = MAX_RETRIEVAL_CONTEXT_LENGTH
 
     # Extract the contexts and URLs from the query results
-    matches = res.get('matches', []) if hasattr(res, 'get') else getattr(
-        res, 'matches', []
-    )
+    matches = retrieval_matches(res)
     for item in matches:
         context, url = metadata_text_and_url(item)
         if context is None:

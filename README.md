@@ -131,6 +131,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `twilio.com` or `*.twilio.com` hosts instead of substring matches.
 - Keep the retrieval metadata guard in place so incomplete Pinecone match
   metadata is skipped before answer generation.
+- Malformed retrieval matches containers normalize to no matches before
+  metadata iteration, preserving query-only answer generation.
 - Keep the retrieval context length guard in place so oversized Pinecone
   metadata cannot expand generated-answer prompts without bound.
 - Keep the total retrieval context budget shared across all matches, including

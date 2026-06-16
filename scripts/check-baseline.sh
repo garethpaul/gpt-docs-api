@@ -49,6 +49,7 @@ LOCATION_INDEPENDENT_MAKE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-location-indepen
 DEPENDENCY_LOCK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-hashed-dependency-lock.md"
 DEPENDENCY_LOCK_CHECK="$ROOT_DIR/scripts/check-dependency-lock.py"
 BINARY_ARTIFACT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-binary-only-dependency-artifacts.md"
+RETRIEVAL_MATCHES_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-matches-container.md"
 
 require_file() {
   path=$1
@@ -104,6 +105,7 @@ for path in \
   "docs/plans/2026-06-13-location-independent-make.md" \
   "docs/plans/2026-06-15-hashed-dependency-lock.md" \
   "docs/plans/2026-06-15-binary-only-dependency-artifacts.md" \
+  "docs/plans/2026-06-16-retrieval-matches-container.md" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
@@ -342,9 +344,19 @@ if ! grep -Fq "def metadata_text_and_url(item)" "$APP" ||
   ! grep -Fq "isinstance(text, str)" "$APP" ||
   ! grep -Fq "MAX_RETRIEVAL_CONTEXT_LENGTH = 4000" "$APP" ||
   ! grep -Fq "context[:MAX_RETRIEVAL_CONTEXT_LENGTH]" "$APP" ||
-  ! grep -Fq "res.get('matches', [])" "$APP" ||
+  ! grep -Fq "matches = retrieval_matches(res)" "$APP" ||
   ! grep -Fq "metadata_text_and_url(item)" "$APP"; then
   printf '%s\n' "Retrieval metadata must be validated before answer generation." >&2
+  exit 1
+fi
+
+if ! grep -Fq "def retrieval_matches(response)" "$APP" ||
+  ! grep -Fq "isinstance(matches, (list, tuple))" "$APP" ||
+  ! grep -Fq "matches = retrieval_matches(res)" "$APP" ||
+  ! grep -Fq "test_make_query_ignores_malformed_matches_containers" "$TEST_APP_AUTH" ||
+  ! grep -Fq "test_retrieval_matches_accepts_list_and_tuple" "$TEST_APP_AUTH" ||
+  ! grep -Fq 'malformed_matches = (None, "matches", 1, {"metadata": {}})' "$TEST_APP_AUTH"; then
+  printf '%s\n' "Retrieval matches containers must be normalized before metadata iteration." >&2
   exit 1
 fi
 
@@ -903,6 +915,44 @@ if ! grep -Fq "binary wheels only" "$README" ||
   printf '%s\n' "Project guidance must document binary-only dependency resolution." >&2
   exit 1
 fi
+
+if ! grep -Fq "Malformed retrieval matches containers" "$README" ||
+  ! grep -Fq "Malformed retrieval matches containers" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "Malformed retrieval matches containers" "$VISION" ||
+  ! grep -Fq "Malformed retrieval matches containers" "$ROOT_DIR/AGENTS.md" ||
+  ! grep -Fq "Normalized malformed retrieval matches containers" "$CHANGES"; then
+  printf '%s\n' "Project guidance must document retrieval matches-container normalization." >&2
+  exit 1
+fi
+
+python3 - "$RETRIEVAL_MATCHES_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+verification = plan.split("## Verification Completed\n", 1)[-1]
+required = (
+    "focused retrieval tests and complete API suite passed",
+    "All four Make gates passed",
+    "external-directory Make gate passed",
+    "container-guard mutation failed",
+    "mapping-acceptance mutation failed",
+    "focused-test contract mutation failed",
+    "plan-status mutation failed",
+    "plan-evidence mutation failed",
+)
+if (
+    statuses != ["status: completed"]
+    or "## Verification Completed\n" not in plan
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run|not yet)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Retrieval matches-container plan must record completed verification."
+    )
+PY
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 "$EXTENSION_RENDERING_CHECK"

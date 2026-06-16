@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-16
+
+- Normalized malformed retrieval matches containers to an empty collection
+  before per-item metadata validation.
+
 ## 2026-06-15
 
 - Required binary-only dependency artifacts in hosted installation and Chalice packaging.

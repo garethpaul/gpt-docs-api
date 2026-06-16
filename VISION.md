@@ -25,6 +25,8 @@ Priority:
 - Keep crawling, embedding, retrieval, and answer generation boundaries clear
 - Preserve Twilio link host filtering for generated answer citations
 - Preserve the retrieval metadata guard before answer generation
+- Malformed retrieval matches containers normalize to no matches before
+  metadata iteration and query-only answer generation
 - Preserve the retrieval context length guard before prompt assembly
 - Preserve one total retrieval context budget across all matches and separators
 - Preserve one-day cache expiration and the DynamoDB `expires_at` TTL attribute
