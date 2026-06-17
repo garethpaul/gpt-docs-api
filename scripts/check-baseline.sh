@@ -51,6 +51,7 @@ DEPENDENCY_LOCK_CHECK="$ROOT_DIR/scripts/check-dependency-lock.py"
 BINARY_ARTIFACT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-binary-only-dependency-artifacts.md"
 RETRIEVAL_MATCHES_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-matches-container.md"
 RETRIEVAL_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-response-accessor.md"
+RETRIEVAL_METADATA_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-17-retrieval-metadata-accessor.md"
 
 require_file() {
   path=$1
@@ -1069,6 +1070,38 @@ if (
 ):
     raise SystemExit(
         "Retrieval response accessor plan must record completed verification."
+    )
+PY
+
+python3 - "$RETRIEVAL_METADATA_ACCESSOR_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+verification = plan.split("## Verification Completed\n", 1)[-1]
+normalized = " ".join(verification.split())
+required = (
+    "complete API suite passed with 52 tests",
+    "All four Make gates passed",
+    "external-directory Make gate passed",
+    "Six isolated mutations were rejected",
+    "no actionable findings",
+    "Both canonical implementation-head checks passed",
+    "push run 27664285855",
+    "pull-request run 27664290314",
+    "zero open alerts",
+    "No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, or deployment operation was executed",
+)
+if (
+    statuses != ["status: completed"]
+    or "## Verification Completed\n" not in plan
+    or any(item not in normalized for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run|not yet)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Retrieval metadata accessor plan must record completed verification."
     )
 PY
 
