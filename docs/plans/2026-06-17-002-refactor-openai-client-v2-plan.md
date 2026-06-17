@@ -2,7 +2,7 @@
 title: "refactor: Migrate to the OpenAI v2 client"
 type: refactor
 date: 2026-06-17
-status: planned
+status: completed
 ---
 
 # refactor: Migrate to the OpenAI v2 client
@@ -150,6 +150,36 @@ changes.
   hybrid compatibility layer.
 - Transitive dependency changes can alter package size or Chalice packaging;
   package inspection remains a release gate.
+
+---
+
+## Work Completed
+
+- Replaced module-level OpenAI calls with an environment-configured `OpenAI`
+  instance and current embeddings and chat-completions resources.
+- Preserved injectable, deliberately falsey client doubles so offline tests
+  prove selection depends on `None` rather than object truthiness.
+- Upgraded the direct dependency to `openai==2.41.0`, regenerated the Python
+  3.10 manylinux hash lock, and updated dependency and repository contracts.
+- Updated project guidance to record completed OpenAI modernization while
+  leaving Pinecone migration as a separate priority.
+
+## Verification Completed
+
+- The 9 focused OpenAI client tests and complete API suite passed with 54
+  tests without provider credentials.
+- All four Make gates passed: `make lint`, `make test`, `make build`, and
+  `make check`; `make verify` and the external-directory Make gate also passed.
+- The exact Python 3.10 environment installed 50 hash-addressed, binary-only
+  packages including `openai==2.41.0`, then passed `make verify`.
+- A real Chalice package build passed with 6,648 deployment entries and one
+  Python 3.10 function using the scoped cache role.
+- Seven isolated mutations were rejected for their intended reasons: legacy
+  embedding calls, legacy chat calls, truthiness-based injection, a stale
+  direct pin, removed client-factory coverage, stale plan status, and falsified
+  package evidence.
+- No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, or deployment
+  operation was executed.
 
 ---
 

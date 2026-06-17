@@ -49,11 +49,13 @@ Priority:
 - Require reviewed binary deployment artifacts instead of local source builds
 - Keep the generated Lambda role limited to `gpt_docs` cache reads/writes and
   standard CloudWatch Logs delivery
+- The OpenAI client uses the current instance API while preserving offline
+  dependency injection for embeddings, answers, and classifications
 
 Next priorities:
 
 - Improve evaluation of answer quality and citation grounding
-- Modernize OpenAI and Pinecone clients in a dedicated pass
+- Modernize the Pinecone client in a dedicated pass
 - Keep Chrome extension behavior aligned with API changes while preserving
   text-only extension rendering and HTTP(S)-only source links
 - Document crawler scope and robots.txt/respectful access behavior

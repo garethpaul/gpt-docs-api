@@ -1,26 +1,32 @@
-import openai
 import os
 import math
 from typing import List, Dict
+from openai import OpenAI
 from chalicelib.config import OPENAI_API_KEY_ENV, EMBEDDING_MODEL, GPT_MODEL
 from chalicelib.utils import extract_json_object
 
 CLASSIFICATION_KEYS = ("with_code", "minimal_code", "no_code")
 
 
-def get_embeddings(query: str, openai_client=openai) -> List[float]:
+def create_openai_client():
+    """Create an OpenAI client from the configured API key."""
+    api_key = os.environ.get(OPENAI_API_KEY_ENV)
+    if not api_key:
+        raise ValueError("OpenAI API key is not configured")
+    return OpenAI(api_key=api_key)
+
+
+def get_embeddings(query: str, openai_client=None) -> List[float]:
     """Get embeddings for the query text."""
-    embed_model = EMBEDDING_MODEL
-    openai_client.api_key = os.environ.get(OPENAI_API_KEY_ENV)
-    res = openai_client.Embedding.create(
+    client = create_openai_client() if openai_client is None else openai_client
+    response = client.embeddings.create(
         input=[query],
-        engine=embed_model
+        model=EMBEDDING_MODEL,
     )
-    embedding_vector = res['data'][0]['embedding']
-    return embedding_vector
+    return response.data[0].embedding
 
 
-def generate_response(query: str, openai_client=openai) -> str:
+def generate_response(query: str, openai_client=None) -> str:
     """Generate a response using GPT."""
     primer = f"""You are Q&A bot. A highly intelligent system that answers
     user questions based on the information provided by the user above
@@ -28,14 +34,15 @@ def generate_response(query: str, openai_client=openai) -> str:
     paragraphs. If the information can not be found in the information 
     provided by the user you truthfully say "I don't know".
     """
-    open_res = openai_client.ChatCompletion.create(
+    client = create_openai_client() if openai_client is None else openai_client
+    response = client.chat.completions.create(
         model=GPT_MODEL,
         messages=[
             {"role": "system", "content": primer},
             {"role": "user", "content": query}
         ]
     )
-    return open_res['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
 
 def validate_classification_weights(weights: Dict[str, float]) -> Dict[str, float]:
@@ -67,7 +74,7 @@ def validate_classification_weights(weights: Dict[str, float]) -> Dict[str, floa
 
 def generate_classification(model: str,
                             query: str,
-                            openai_client=openai) -> Dict[str, float]:
+                            openai_client=None) -> Dict[str, float]:
     """
     Generate a classification for a given query using the specified OpenAI
     model.
@@ -91,14 +98,15 @@ def generate_classification(model: str,
     )
 
     try:
-        response = openai_client.ChatCompletion.create(
+        client = create_openai_client() if openai_client is None else openai_client
+        response = client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": primer},
                 {"role": "user", "content": query}
             ]
         )
-        api_resp = response['choices'][0]['message']['content']
+        api_resp = response.choices[0].message.content
         return validate_classification_weights(extract_json_object(api_resp))
     except Exception as error:
         raise Exception(f"Failed to generate classification: {str(error)}")

@@ -1,8 +1,10 @@
 import os
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from chalicelib.classification import (
+    create_openai_client,
     generate_classification,
     generate_response,
     get_embeddings,
@@ -11,114 +13,108 @@ from chalicelib.classification import (
 from chalicelib.config import EMBEDDING_MODEL, GPT_MODEL, OPENAI_API_KEY_ENV
 
 
-class FakeEmbedding:
-    calls = []
+class FakeEmbeddings:
+    def __init__(self):
+        self.calls = []
 
-    @classmethod
-    def create(cls, **kwargs):
-        cls.calls.append(kwargs)
-        return {"data": [{"embedding": [0.1, 0.2, 0.3]}]}
-
-
-class FakeChatCompletion:
-    calls = []
-    response = {
-        "choices": [
-            {
-                "message": {
-                    "content": "Generated answer",
-                }
-            }
-        ]
-    }
-
-    @classmethod
-    def create(cls, **kwargs):
-        cls.calls.append(kwargs)
-        return cls.response
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return SimpleNamespace(
+            data=[SimpleNamespace(embedding=[0.1, 0.2, 0.3])]
+        )
 
 
-class FakeOpenAI:
-    api_key = None
-    Embedding = FakeEmbedding
-    ChatCompletion = FakeChatCompletion
+class FakeChatCompletions:
+    def __init__(self):
+        self.calls = []
+        self.content = "Generated answer"
+
+    def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=self.content))]
+        )
 
 
-class ErrorChatCompletion:
-    @classmethod
-    def create(cls, **kwargs):
+class FakeOpenAIClient:
+    def __init__(self):
+        self.embeddings = FakeEmbeddings()
+        self.chat = SimpleNamespace(completions=FakeChatCompletions())
+
+    def __bool__(self):
+        return False
+
+
+class ErrorChatCompletions:
+    def create(self, **kwargs):
         raise RuntimeError("openai unavailable")
 
 
-class ErrorOpenAI:
-    ChatCompletion = ErrorChatCompletion
+class ErrorOpenAIClient:
+    chat = SimpleNamespace(completions=ErrorChatCompletions())
 
 
 class ClassificationTests(unittest.TestCase):
     def setUp(self):
-        FakeEmbedding.calls = []
-        FakeChatCompletion.calls = []
-        FakeChatCompletion.response = {
-            "choices": [
-                {
-                    "message": {
-                        "content": "Generated answer",
-                    }
-                }
-            ]
-        }
-        FakeOpenAI.api_key = None
+        self.openai_client = FakeOpenAIClient()
 
-    def test_get_embeddings_uses_configured_model_and_api_key(self):
+    def test_create_openai_client_uses_configured_api_key(self):
         with patch.dict(os.environ, {OPENAI_API_KEY_ENV: "test-key"}):
-            result = get_embeddings("How?", openai_client=FakeOpenAI)
+            with patch("chalicelib.classification.OpenAI") as openai_class:
+                result = create_openai_client()
+
+        self.assertEqual(result, openai_class.return_value)
+        openai_class.assert_called_once_with(api_key="test-key")
+
+    def test_create_openai_client_requires_api_key(self):
+        with patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(ValueError, "OpenAI API key is not configured"):
+                create_openai_client()
+
+    def test_get_embeddings_uses_configured_model(self):
+        result = get_embeddings("How?", openai_client=self.openai_client)
 
         self.assertEqual(result, [0.1, 0.2, 0.3])
-        self.assertEqual(FakeOpenAI.api_key, "test-key")
         self.assertEqual(
-            FakeEmbedding.calls,
-            [{"input": ["How?"], "engine": EMBEDDING_MODEL}],
+            self.openai_client.embeddings.calls,
+            [{"input": ["How?"], "model": EMBEDDING_MODEL}],
         )
 
     def test_generate_response_uses_primer_and_user_query(self):
-        result = generate_response("What is Twilio?", openai_client=FakeOpenAI)
+        result = generate_response(
+            "What is Twilio?", openai_client=self.openai_client
+        )
 
         self.assertEqual(result, "Generated answer")
-        self.assertEqual(FakeChatCompletion.calls[0]["model"], GPT_MODEL)
+        call = self.openai_client.chat.completions.calls[0]
+        self.assertEqual(call["model"], GPT_MODEL)
         self.assertEqual(
-            FakeChatCompletion.calls[0]["messages"][-1],
+            call["messages"][-1],
             {"role": "user", "content": "What is Twilio?"},
         )
         self.assertIn(
             "I don't know",
-            FakeChatCompletion.calls[0]["messages"][0]["content"],
+            call["messages"][0]["content"],
         )
 
     def test_generate_classification_parses_json_response(self):
-        FakeChatCompletion.response = {
-            "choices": [
-                {
-                    "message": {
-                        "content": (
-                            '{"with_code": 0.8, "minimal_code": 0.1, '
-                            '"no_code": 0.2}'
-                        ),
-                    }
-                }
-            ]
-        }
+        self.openai_client.chat.completions.content = (
+            '{"with_code": 0.8, "minimal_code": 0.1, "no_code": 0.2}'
+        )
 
         result = generate_classification(
             "gpt-test",
             "How do I build this?",
-            openai_client=FakeOpenAI,
+            openai_client=self.openai_client,
         )
 
         self.assertEqual(
             result,
             {"with_code": 0.8, "minimal_code": 0.1, "no_code": 0.2},
         )
-        self.assertEqual(FakeChatCompletion.calls[0]["model"], "gpt-test")
+        self.assertEqual(
+            self.openai_client.chat.completions.calls[0]["model"], "gpt-test"
+        )
 
     def test_validate_classification_weights_requires_expected_keys(self):
         with self.assertRaisesRegex(ValueError, "must include"):
@@ -139,15 +135,9 @@ class ClassificationTests(unittest.TestCase):
                     validate_classification_weights(weights)
 
     def test_generate_classification_wraps_malformed_weight_errors(self):
-        FakeChatCompletion.response = {
-            "choices": [
-                {
-                    "message": {
-                        "content": '{"with_code": 0.8, "no_code": 0.2}',
-                    }
-                }
-            ]
-        }
+        self.openai_client.chat.completions.content = (
+            '{"with_code": 0.8, "no_code": 0.2}'
+        )
 
         with self.assertRaisesRegex(
             Exception,
@@ -156,7 +146,7 @@ class ClassificationTests(unittest.TestCase):
             generate_classification(
                 "gpt-test",
                 "How do I build this?",
-                openai_client=FakeOpenAI,
+                openai_client=self.openai_client,
             )
 
     def test_generate_classification_wraps_openai_errors(self):
@@ -167,7 +157,7 @@ class ClassificationTests(unittest.TestCase):
             generate_classification(
                 "gpt-test",
                 "How do I build this?",
-                openai_client=ErrorOpenAI,
+                openai_client=ErrorOpenAIClient(),
             )
 
 
