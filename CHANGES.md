@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-17
+
+- Normalized non-callable or failing retrieval metadata accessors to missing
+  metadata while preserving mapping and object match compatibility.
+
 ## 2026-06-16
 
 - Normalized non-callable or failing retrieval response accessors to no matches

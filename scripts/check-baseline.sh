@@ -108,6 +108,7 @@ for path in \
   "docs/plans/2026-06-15-binary-only-dependency-artifacts.md" \
   "docs/plans/2026-06-16-retrieval-matches-container.md" \
   "docs/plans/2026-06-16-retrieval-response-accessor.md" \
+  "docs/plans/2026-06-17-retrieval-metadata-accessor.md" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
@@ -342,6 +343,7 @@ if ! grep -Fq "def is_twilio_doc_url(url)" "$APP" ||
 fi
 
 if ! grep -Fq "def metadata_text_and_url(item)" "$APP" ||
+  ! grep -Fq "metadata = retrieval_metadata(item)" "$APP" ||
   ! grep -Fq "isinstance(metadata, dict)" "$APP" ||
   ! grep -Fq "isinstance(text, str)" "$APP" ||
   ! grep -Fq "MAX_RETRIEVAL_CONTEXT_LENGTH = 4000" "$APP" ||
@@ -351,6 +353,40 @@ if ! grep -Fq "def metadata_text_and_url(item)" "$APP" ||
   printf '%s\n' "Retrieval metadata must be validated before answer generation." >&2
   exit 1
 fi
+
+python3 - "$APP" "$TEST_APP_AUTH" <<'PY'
+import sys
+from pathlib import Path
+
+source = Path(sys.argv[1]).read_text(encoding="utf-8")
+tests = Path(sys.argv[2]).read_text(encoding="utf-8")
+helper = source[
+    source.index("def retrieval_metadata(item)"):
+    source.index("def metadata_text_and_url(item)")
+]
+required_source = (
+    "if isinstance(item, dict):",
+    "get_metadata = getattr(item, 'get', None)",
+    "if not callable(get_metadata):",
+    "return None",
+    "return get_metadata('metadata')",
+    "return getattr(item, 'metadata', None)",
+    "except Exception:",
+)
+required_tests = (
+    "test_retrieval_metadata_handles_unsupported_accessors",
+    "test_make_query_skips_metadata_accessor_failures",
+    "NonCallableGetMatch",
+    "RaisingGetMatch",
+    "RaisingMetadataMatch",
+)
+if any(contract not in helper for contract in required_source):
+    raise SystemExit("Retrieval metadata access must fail safely before shape validation.")
+if "item.get('metadata') if isinstance(item, dict)" in source:
+    raise SystemExit("Retrieval metadata access must not call an unverified get attribute.")
+if any(contract not in tests for contract in required_tests):
+    raise SystemExit("Retrieval metadata accessor regressions must remain registered.")
+PY
 
 if ! grep -Fq "def retrieval_matches(response)" "$APP" ||
   ! grep -Fq "isinstance(matches, (list, tuple))" "$APP" ||
@@ -966,6 +1002,15 @@ if ! grep -Fq "Unusable retrieval response accessors normalize to no matches" "$
   exit 1
 fi
 
+if ! grep -Fq "Unusable retrieval metadata accessors normalize to missing metadata" "$README" ||
+  ! grep -Fq "Unusable retrieval metadata accessors must normalize to missing metadata" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "Unusable retrieval metadata accessors normalize to missing metadata" "$VISION" ||
+  ! grep -Fq "Unusable retrieval metadata accessors must normalize to missing metadata" "$ROOT_DIR/AGENTS.md" ||
+  ! grep -Fq "Normalized non-callable or failing retrieval metadata accessors" "$CHANGES"; then
+  printf '%s\n' "Project guidance must document retrieval metadata accessor normalization." >&2
+  exit 1
+fi
+
 python3 - "$RETRIEVAL_MATCHES_PLAN" <<'PY'
 import re
 import sys
@@ -1026,6 +1071,7 @@ if (
         "Retrieval response accessor plan must record completed verification."
     )
 PY
+
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python -m compileall -q "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 "$EXTENSION_RENDERING_CHECK"

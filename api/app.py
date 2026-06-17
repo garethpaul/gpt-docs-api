@@ -106,11 +106,22 @@ def filter_twilio_doc_urls(urls):
     return sorted(filtered_urls)
 
 
+def retrieval_metadata(item):
+    """Return match metadata without propagating provider accessor failures."""
+    try:
+        if isinstance(item, dict):
+            get_metadata = getattr(item, 'get', None)
+            if not callable(get_metadata):
+                return None
+            return get_metadata('metadata')
+        return getattr(item, 'metadata', None)
+    except Exception:
+        return None
+
+
 def metadata_text_and_url(item):
     """Return usable retrieval context and URL metadata from a Pinecone match."""
-    metadata = item.get('metadata') if isinstance(item, dict) else getattr(
-        item, 'metadata', None
-    )
+    metadata = retrieval_metadata(item)
     if not isinstance(metadata, dict):
         return None, None
 

@@ -135,6 +135,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   metadata iteration, preserving query-only answer generation.
 - Unusable retrieval response accessors normalize to no matches, while
   callable mapping access and safe object attributes remain supported.
+- Unusable retrieval metadata accessors normalize to missing metadata, while
+  callable mapping access and safe object attributes remain supported.
 - Keep the retrieval context length guard in place so oversized Pinecone
   metadata cannot expand generated-answer prompts without bound.
 - Keep the total retrieval context budget shared across all matches, including
