@@ -2,7 +2,7 @@
 title: "fix: Keep Python gates artifact-free"
 type: fix
 date: 2026-06-18
-status: planned
+status: completed
 ---
 
 # fix: Keep Python gates artifact-free
@@ -29,7 +29,7 @@ policy and repeatedly dirtying otherwise clean validation worktrees.
 - R3. The baseline must reject a return to `compileall`, weakened test
   invocation, missing regression coverage, or generated cache artifacts.
 - R4. Root and external-directory gates must retain dependency-lock,
-  55-test, extension-rendering, and API-baseline coverage.
+  57-test, extension-rendering, and API-baseline coverage.
 
 ## Implementation
 
@@ -48,13 +48,19 @@ policy and repeatedly dirtying otherwise clean validation worktrees.
 - Existing inherited main-branch vendor alerts remain owned by open PR #23.
 - No live provider or deployment operation is executed.
 
-## Verification Planned
+## Verification Completed
 
-- Run the focused syntax-helper regression and complete test suite.
-- Run all maintained Make gates from the repository root and `make check` from
-  `/tmp`, then prove no cache artifact remains.
-- Reject isolated mutations for helper ownership, compileall restoration,
-  bytecode-env removal, regression weakening, artifact guard removal, and plan
-  evidence weakening.
-- Audit exact paths, whitespace, secrets, dependency/workflow drift, conflict
-  markers, and file modes before commit and push.
+- The 3 focused syntax-helper and artifact-guard regressions passed, and the
+  complete API suite passed with 57 tests.
+- All four Make gates passed independently: `make lint`, `make test`,
+  `make build`, and `make check`.
+- The external-directory Make gate also passed from `/tmp` with the same
+  dependency-lock, test, extension-rendering, and API-baseline coverage.
+- No `__pycache__`, `.pyc`, or `.pyo` artifact remained after the root and
+  external-directory gates.
+- Eight isolated mutations were rejected for compileall
+  restoration, bytecode-environment removal, in-memory compile removal,
+  cache-assertion weakening, artifact-guard removal, invalid-syntax success,
+  plan-status regression, and plan-evidence removal.
+- No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, Chalice package,
+  or deployment operation was executed.

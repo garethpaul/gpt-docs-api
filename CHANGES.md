@@ -1,5 +1,10 @@
 # Changes
 
+## 2026-06-18
+
+- Replaced bytecode-writing Python compilation with in-memory syntax checks and
+  made maintained test gates artifact-free.
+
 ## 2026-06-17
 
 - Migrated the OpenAI Python client to 2.41.0 and its instance-based embedding
