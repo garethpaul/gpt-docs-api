@@ -2,6 +2,8 @@
 
 ## 2026-06-18
 
+- Made Chalice package verification forward cancellation signals to its active
+  package process and clean up promptly even when the child ignores termination.
 - Replaced bytecode-writing Python compilation with in-memory syntax checks and
   made maintained test gates artifact-free.
 

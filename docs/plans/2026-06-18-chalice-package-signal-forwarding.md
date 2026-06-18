@@ -2,7 +2,7 @@
 title: "fix: Stop Chalice package verification promptly"
 type: fix
 date: 2026-06-18
-status: planned
+status: completed
 ---
 
 # fix: Stop Chalice package verification promptly
@@ -49,12 +49,22 @@ promptly. With the maintained default, that delay can be 600 seconds.
   content, workflow, credential, or deployment behavior changes.
 - No live provider, package publication, or deployment operation is executed.
 
-## Verification Planned
+## Verification Completed
 
-- Run the focused package-signal regression and shell syntax checks.
-- Run the maintained package gate with its existing bounded timeout.
-- Run `make verify` and the external-directory baseline gate.
-- Prove isolated mutations are rejected for signal-forwarding, child-tracking,
-  cleanup, test, and plan-evidence regressions.
-- Confirm no generated package, bytecode, cache, credential, or secret artifact
-  remains in the worktree.
+- The three-case focused package-signal regression passed for `HUP`, `INT`, and
+  `TERM`, including conventional statuses, forced child termination, and
+  temporary-directory cleanup; both maintained shell scripts passed `sh -n`.
+- The maintained package gate passed in an isolated Python 3.10 environment
+  installed from the hash-locked binary requirements, verifying 6,648 archive
+  entries and one Python 3.10 function with scoped cache access.
+- The complete API suite passed with 60 tests, and All four Make gates passed
+  independently: `make lint`, `make test`, `make build`, and `make check`.
+- The external-directory baseline gate also passed from `/tmp` without changing
+  the caller's working directory assumptions.
+- Six isolated mutations were rejected for active-child tracking, signal-group
+  forwarding, forced termination, three-signal regression coverage, cleanup
+  assertions, and plan-status evidence.
+- No generated package, bytecode, cache, credential, or secret artifact
+  remained in the worktree.
+- No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, package
+  publication, or deployment operation was executed.

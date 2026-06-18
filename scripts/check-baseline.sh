@@ -21,6 +21,7 @@ TEST_CACHE="$ROOT_DIR/api/tests/test_cache.py"
 TEST_CLASSIFICATION="$ROOT_DIR/api/tests/test_classification.py"
 TEST_UTILS="$ROOT_DIR/api/tests/test_utils.py"
 TEST_SYNTAX_CHECK="$ROOT_DIR/api/tests/test_syntax_checker.py"
+TEST_PACKAGE_SIGNAL="$ROOT_DIR/api/tests/test_package_verifier.py"
 PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md"
 CHECK_PLAN="$ROOT_DIR/docs/plans/2026-06-08-source-baseline-guard.md"
 AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-08-gpt-docs-api-auth-guard.md"
@@ -55,6 +56,7 @@ RETRIEVAL_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-response-acce
 RETRIEVAL_METADATA_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-17-retrieval-metadata-accessor.md"
 OPENAI_CLIENT_PLAN="$ROOT_DIR/docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md"
 BYTECODE_FREE_PLAN="$ROOT_DIR/docs/plans/2026-06-18-bytecode-free-python-gates.md"
+PACKAGE_SIGNAL_PLAN="$ROOT_DIR/docs/plans/2026-06-18-chalice-package-signal-forwarding.md"
 SYNTAX_CHECK="$ROOT_DIR/scripts/check-python-syntax.py"
 
 require_file() {
@@ -87,6 +89,7 @@ for path in \
   "api/tests/test_cache.py" \
   "api/tests/test_classification.py" \
   "api/tests/test_syntax_checker.py" \
+  "api/tests/test_package_verifier.py" \
   "api/tests/test_utils.py" \
   "docs/plans/2026-06-08-gpt-docs-api-auth-guard.md" \
   "docs/plans/2026-06-08-gpt-docs-api-testability-dependency-baseline.md" \
@@ -117,6 +120,7 @@ for path in \
   "docs/plans/2026-06-17-retrieval-metadata-accessor.md" \
   "docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md" \
   "docs/plans/2026-06-18-bytecode-free-python-gates.md" \
+  "docs/plans/2026-06-18-chalice-package-signal-forwarding.md" \
   "scripts/check-python-syntax.py" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
@@ -308,7 +312,16 @@ fi
 
 if ! grep -Fq "scripts/verify-chalice-package.sh" "$MAKEFILE" ||
   ! grep -Fq "mktemp -d" "$PACKAGE_CHECK" ||
-  ! grep -Fq "trap cleanup EXIT HUP INT TERM" "$PACKAGE_CHECK" ||
+  ! grep -Fq "PACKAGE_PID=" "$PACKAGE_CHECK" ||
+  ! grep -Fq 'PACKAGE_PID=$!' "$PACKAGE_CHECK" ||
+  ! grep -Fq 'if wait "$PACKAGE_PID"; then' "$PACKAGE_CHECK" ||
+  ! grep -Fq "terminate() {" "$PACKAGE_CHECK" ||
+  ! grep -Fq 'kill -s "$signal" "-$PACKAGE_PID"' "$PACKAGE_CHECK" ||
+  ! grep -Fq 'kill -KILL "-$PACKAGE_PID"' "$PACKAGE_CHECK" ||
+  ! grep -Fq "trap cleanup EXIT" "$PACKAGE_CHECK" ||
+  ! grep -Fq "trap 'terminate HUP 129' HUP" "$PACKAGE_CHECK" ||
+  ! grep -Fq "trap 'terminate INT 130' INT" "$PACKAGE_CHECK" ||
+  ! grep -Fq "trap 'terminate TERM 143' TERM" "$PACKAGE_CHECK" ||
   ! grep -Fq "AWS_EC2_METADATA_DISABLED=true" "$PACKAGE_CHECK" ||
   ! grep -Fq "AWS_ACCESS_KEY_ID=package-verification" "$PACKAGE_CHECK" ||
   ! grep -Fq "AWS_DEFAULT_REGION=us-east-1" "$PACKAGE_CHECK" ||
@@ -328,6 +341,19 @@ if ! grep -Fq "scripts/verify-chalice-package.sh" "$MAKEFILE" ||
   ! grep -Fq '"dynamodb:GetItem", "dynamodb:PutItem"' "$PACKAGE_CHECK" ||
   ! grep -Fq '"chalice/", "openai/", "pinecone/"' "$PACKAGE_CHECK"; then
   printf '%s\n' "Package verification must remain temporary, bounded, and structural." >&2
+  exit 1
+fi
+
+if ! grep -Fq "fake Chalice command did not start" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "self._assert_signal_cleanup(signal.SIGHUP, 129)" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "self._assert_signal_cleanup(signal.SIGINT, 130)" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "self._assert_signal_cleanup(signal.SIGTERM, 143)" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "process.send_signal(signal_value)" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "process.communicate(timeout=5)" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "self.assertEqual(expected_status, process.returncode" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "self.assertEqual([], list(package_temporary_directory.iterdir()))" "$TEST_PACKAGE_SIGNAL" ||
+  ! grep -Fq "with self.assertRaises(ProcessLookupError)" "$TEST_PACKAGE_SIGNAL"; then
+  printf '%s\n' "Package signal regression must remain bounded and cleanup-sensitive." >&2
   exit 1
 fi
 
@@ -1214,6 +1240,34 @@ if (
 ):
     raise SystemExit(
         "Bytecode-free Python gates plan must record completed status and actual verification."
+    )
+PY
+
+python3 - "$PACKAGE_SIGNAL_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+verification = plan.split("## Verification Completed\n", 1)[-1]
+normalized = " ".join(verification.split())
+required = (
+    "focused package-signal regression passed",
+    "maintained package gate passed",
+    "All four Make gates passed independently",
+    "external-directory baseline gate also passed",
+    "isolated mutations were rejected",
+    "No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, package publication, or deployment operation was executed",
+)
+if (
+    statuses != ["status: completed"]
+    or "## Verification Completed\n" not in plan
+    or any(item not in normalized for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run|not yet)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Chalice package signal plan must record completed status and actual verification."
     )
 PY
 
