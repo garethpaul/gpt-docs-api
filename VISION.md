@@ -69,6 +69,8 @@ Contribution rules:
 - Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
 - Keep GitHub Actions aligned with the no-live-credentials local gate.
+- Keep Vercel automatic Git deployments disabled; the maintained surfaces are
+  the Chalice API implementation and the repository's GitHub Pages deployment.
 - Keep the text-only extension rendering guard in the canonical local and
   hosted baseline.
 

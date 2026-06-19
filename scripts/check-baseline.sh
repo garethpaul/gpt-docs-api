@@ -35,6 +35,8 @@ CACHE_EXPIRATION_PLAN="$ROOT_DIR/docs/plans/2026-06-10-cache-expiration-boundary
 CACHE_KEY_PLAN="$ROOT_DIR/docs/plans/2026-06-12-cache-query-key-hashing.md"
 EXTENSION_RENDERING_PLAN="$ROOT_DIR/docs/plans/2026-06-12-safe-extension-rendering.md"
 EXTENSION_RENDERING_CHECK="$ROOT_DIR/scripts/check-extension-rendering.sh"
+VERCEL_CONFIG="$ROOT_DIR/vercel.json"
+VERCEL_PLAN="$ROOT_DIR/docs/plans/2026-06-12-vercel-deployment-ownership.md"
 
 require_file() {
   path=$1
@@ -51,6 +53,7 @@ for path in \
   "SECURITY.md" \
   "VISION.md" \
   "Makefile" \
+  "vercel.json" \
   "api/requirements.txt" \
   "api/app.py" \
   "api/chalicelib/auth.py" \
@@ -78,10 +81,27 @@ for path in \
   "docs/plans/2026-06-10-cache-expiration-boundary.md" \
   "docs/plans/2026-06-12-cache-query-key-hashing.md" \
   "docs/plans/2026-06-12-safe-extension-rendering.md" \
+  "docs/plans/2026-06-12-vercel-deployment-ownership.md" \
   "scripts/check-extension-rendering.sh" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
+
+python - "$VERCEL_CONFIG" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+config = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+if config.get("git", {}).get("deploymentEnabled") is not False:
+    raise SystemExit(
+        "vercel.json must disable automatic Git deployments for every branch"
+    )
+if "rewrites" in config:
+    raise SystemExit(
+        "vercel.json must not route requests to the retired api/index function"
+    )
+PY
 
 for target in "lint:" "test:" "build: compile" "compile:" "check:" "verify: test compile check"; do
   if ! grep -Fq "$target" "$MAKEFILE"; then
@@ -302,6 +322,7 @@ if ! grep -Fq "make verify" "$README" ||
   ! grep -Fq "fixed-size SHA-256 identity" "$README" ||
   ! grep -Fq "generic 500 errors" "$README" ||
   ! grep -Fq "classification weight schema" "$README" ||
+  ! grep -Fq "Vercel automatic Git deployments are disabled" "$README" ||
   ! grep -Fq "OpenAI" "$README" ||
   ! grep -Fq "Pinecone" "$README"; then
   printf '%s\n' "README must document verification, changelog, and external service boundaries." >&2
@@ -328,6 +349,11 @@ if ! grep -Fq "Run \`make verify\`" "$VISION" ||
   exit 1
 fi
 
+if ! grep -Fq "Vercel automatic Git deployments" "$VISION"; then
+  printf '%s\n' "VISION.md must keep deployment ownership explicit." >&2
+  exit 1
+fi
+
 if ! grep -Fq "source baseline guard" "$CHANGES" ||
   ! grep -Fq "GitHub Actions" "$CHANGES" ||
   ! grep -Fq "make lint" "$CHANGES" ||
@@ -349,6 +375,11 @@ if ! grep -Fq "source baseline guard" "$CHANGES" ||
   exit 1
 fi
 
+if ! grep -Fq "disabled unintended Vercel Git deployments" "$CHANGES"; then
+  printf '%s\n' "CHANGES.md must record the Vercel deployment boundary." >&2
+  exit 1
+fi
+
 if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CHECK_PLAN" ||
   ! grep -Fq "status: completed" "$AUTH_PLAN" ||
@@ -364,10 +395,40 @@ if ! grep -Fq "status: completed" "$PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_EXPIRATION_PLAN" ||
   ! grep -Fq "status: completed" "$CACHE_KEY_PLAN" ||
   ! grep -Fq "status: completed" "$EXTENSION_RENDERING_PLAN" ||
+  ! grep -Fq "status: completed" "$VERCEL_PLAN" ||
   ! grep -Fq "status: completed" "$ROOT_DIR/docs/plans/2026-06-09-twilio-link-host-filtering.md"; then
   printf '%s\n' "Plan documents must be marked completed." >&2
   exit 1
 fi
+
+python - "$VERCEL_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+frontmatter_parts = plan.split("---", 2)
+frontmatter = frontmatter_parts[1] if len(frontmatter_parts) == 3 else ""
+statuses = re.findall(r"^status: .+$", frontmatter, flags=re.MULTILINE)
+sections = plan.split("## Verification Completed\n", 1)
+verification = sections[1] if len(sections) == 2 else ""
+required = (
+    "`make verify`, all 41 API tests",
+    "push run `27395011365`",
+    "pull-request run `27395017871`",
+    "Mutations enabling deployments globally",
+    "no claim is made that",
+)
+
+if (
+    statuses != ["status: completed"]
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Vercel deployment-ownership plan must remain completed with actual verification recorded."
+    )
+PY
 
 if ! grep -Fq "Mutations restoring raw query strings" "$CACHE_KEY_PLAN"; then
   printf '%s\n' "Cache query-key plan must record completed mutation verification." >&2
