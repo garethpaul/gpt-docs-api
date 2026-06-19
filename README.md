@@ -127,6 +127,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   through to retrieval, and write failures are logged after generation.
 - Keep the classification weight schema limited to numeric `with_code`,
   `minimal_code`, and `no_code` values.
+- The OpenAI 2.41.0 instance client is constructed per model operation from
+  `OPENAI_API_KEY`; tests inject resource-shaped clients and never require
+  provider credentials or network access.
 - Twilio link host filtering keeps generated answer links limited to HTTPS
   `twilio.com` or `*.twilio.com` hosts instead of substring matches.
 - Keep the retrieval metadata guard in place so incomplete Pinecone match
@@ -178,6 +181,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   and DynamoDB TTL behavior.
 - See `docs/plans/2026-06-12-cache-query-key-hashing.md` for fixed-size,
   privacy-minimizing query cache identity.
+- See `docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md` for the
+  current OpenAI instance-client and dependency-lock boundary.
 
 ## Contributing
 

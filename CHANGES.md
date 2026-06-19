@@ -2,6 +2,8 @@
 
 ## 2026-06-17
 
+- Migrated the OpenAI Python client to 2.41.0 and its instance-based embedding
+  and chat-completions resources while preserving credential-free test doubles.
 - Normalized non-callable or failing retrieval metadata accessors to missing
   metadata while preserving mapping and object match compatibility.
 

@@ -52,6 +52,7 @@ BINARY_ARTIFACT_PLAN="$ROOT_DIR/docs/plans/2026-06-15-binary-only-dependency-art
 RETRIEVAL_MATCHES_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-matches-container.md"
 RETRIEVAL_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-16-retrieval-response-accessor.md"
 RETRIEVAL_METADATA_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-17-retrieval-metadata-accessor.md"
+OPENAI_CLIENT_PLAN="$ROOT_DIR/docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md"
 
 require_file() {
   path=$1
@@ -110,6 +111,7 @@ for path in \
   "docs/plans/2026-06-16-retrieval-matches-container.md" \
   "docs/plans/2026-06-16-retrieval-response-accessor.md" \
   "docs/plans/2026-06-17-retrieval-metadata-accessor.md" \
+  "docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
@@ -618,7 +620,14 @@ if ! grep -Fq 'validate_request_payload({"query": "   "})' "$TEST_UTILS" ||
   exit 1
 fi
 
-if ! grep -Fq "openai_client=openai" "$CLASSIFICATION" ||
+if ! grep -Fq "from openai import OpenAI" "$CLASSIFICATION" ||
+  ! grep -Fq "def create_openai_client" "$CLASSIFICATION" ||
+  ! grep -Fq "OpenAI(api_key=api_key)" "$CLASSIFICATION" ||
+  ! grep -Fq "client.embeddings.create" "$CLASSIFICATION" ||
+  ! grep -Fq "client.chat.completions.create" "$CLASSIFICATION" ||
+  ! grep -Fq "if openai_client is None else openai_client" "$CLASSIFICATION" ||
+  grep -Fq ".Embedding.create" "$CLASSIFICATION" ||
+  grep -Fq ".ChatCompletion.create" "$CLASSIFICATION" ||
   ! grep -Fq "CLASSIFICATION_KEYS = (\"with_code\", \"minimal_code\", \"no_code\")" "$CLASSIFICATION" ||
   ! grep -Fq "def validate_classification_weights" "$CLASSIFICATION" ||
   ! grep -Fq "math.isfinite" "$CLASSIFICATION" ||
@@ -627,12 +636,22 @@ if ! grep -Fq "openai_client=openai" "$CLASSIFICATION" ||
   exit 1
 fi
 
-if ! grep -Fq "FakeOpenAI" "$TEST_CLASSIFICATION" ||
+if ! grep -Fq "FakeOpenAIClient" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "def __bool__(self)" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "test_create_openai_client_uses_configured_api_key" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "test_create_openai_client_requires_api_key" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "test_validate_classification_weights_requires_expected_keys" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "test_validate_classification_weights_rejects_invalid_values" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "test_generate_classification_wraps_malformed_weight_errors" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "extract_json_object_returns_empty_dict_without_stdout" "$TEST_UTILS"; then
   printf '%s\n' "Tests must cover fake OpenAI clients, classification schemas, and quiet JSON parse failures." >&2
+  exit 1
+fi
+
+if ! grep -Fq "OpenAI 2.41.0 instance client" "$README" ||
+  ! grep -Fq "OpenAI client uses the current instance API" "$VISION" ||
+  ! grep -Fq "OpenAI Python client to 2.41.0" "$CHANGES"; then
+  printf '%s\n' "Project guidance must record the current OpenAI instance-client boundary." >&2
   exit 1
 fi
 
@@ -1102,6 +1121,36 @@ if (
 ):
     raise SystemExit(
         "Retrieval metadata accessor plan must record completed verification."
+    )
+PY
+
+python3 - "$OPENAI_CLIENT_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+verification = plan.split("## Verification Completed\n", 1)[-1]
+normalized = " ".join(verification.split())
+required = (
+    "complete API suite passed with 54 tests",
+    "All four Make gates passed",
+    "external-directory Make gate also passed",
+    "50 hash-addressed, binary-only packages",
+    "openai==2.41.0",
+    "6,648 deployment entries",
+    "Seven isolated mutations were rejected",
+    "No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, or deployment operation was executed",
+)
+if (
+    statuses != ["status: completed"]
+    or "## Verification Completed\n" not in plan
+    or any(item not in normalized for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run|not yet)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "OpenAI v2 client plan must record completed status and actual verification."
     )
 PY
 

@@ -7,7 +7,7 @@ from pathlib import Path
 DIRECT_REQUIREMENTS = {
     "boto3==1.43.18",
     "chalice==1.33.0",
-    "openai==0.28.1",
+    "openai==2.41.0",
     "pinecone-client[grpc]==2.2.4",
 }
 LOCK_COMMAND = (
@@ -16,7 +16,7 @@ LOCK_COMMAND = (
     "--generate-hashes "
     "--no-annotate --output-file api/requirements.txt"
 )
-EXPECTED_PACKAGE_COUNT = 47
+EXPECTED_PACKAGE_COUNT = 50
 PACKAGE = re.compile(r"^([A-Za-z0-9_.-]+)==([^\s\\]+) \\$")
 HASH = re.compile(r"^    --hash=sha256:[0-9a-f]{64}(?: \\)?$")
 
@@ -79,7 +79,7 @@ def main():
     for name, version in {
         "boto3": "1.43.18",
         "chalice": "1.33.0",
-        "openai": "0.28.1",
+        "openai": "2.41.0",
         "pinecone-client": "2.2.4",
     }.items():
         if packages.get(name) != version:
