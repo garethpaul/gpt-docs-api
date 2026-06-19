@@ -80,8 +80,9 @@ in `vercel.json` because their rewrite targeted the Flask entry point retired
 during the 2023 Chalice migration.
 Request validation rejects missing, non-string, whitespace-only, and over the
 maximum query length values before model or retrieval work starts.
-The retrieval context length guard caps each accepted Pinecone metadata text
-chunk before generated-answer prompt assembly.
+The retrieval context length guard enforces one separator-aware 4,000-character
+total retrieval context budget across accepted Pinecone matches before
+generated-answer prompt assembly. Links are returned only for included context.
 Classification responses are constrained to the expected classification weight
 schema before `/classify/builder` returns model-produced JSON to callers.
 
@@ -121,6 +122,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   metadata is skipped before answer generation.
 - Keep the retrieval context length guard in place so oversized Pinecone
   metadata cannot expand generated-answer prompts without bound.
+- Keep the total retrieval context budget shared across all matches, including
+  separators, rather than applying the limit independently per match.
 - Keep unexpected route failures logged server-side while callers receive
   generic 500 errors.
 - Keep user queries and model responses on text-only DOM rendering in both

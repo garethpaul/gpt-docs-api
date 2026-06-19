@@ -60,6 +60,7 @@ PUBLIC_CONTENT_TYPES = {
     '.svg': 'image/svg+xml',
 }
 MAX_RETRIEVAL_CONTEXT_LENGTH = 4000
+RETRIEVAL_CONTEXT_SEPARATOR = "\n\n---\n\n"
 
 
 def safe_public_file_path(filename):
@@ -207,6 +208,7 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     # Initialize lists to store contexts and URLs
     contexts = []
     urls = []
+    remaining_context_length = MAX_RETRIEVAL_CONTEXT_LENGTH
 
     # Extract the contexts and URLs from the query results
     matches = res.get('matches', []) if hasattr(res, 'get') else getattr(
@@ -216,10 +218,21 @@ def make_query(query: str) -> Tuple[str, List[str]]:
         context, url = metadata_text_and_url(item)
         if context is None:
             continue
-        contexts.append(context)
-        urls.append(url)
 
-    augmented_query = "\n\n---\n\n".join(contexts)+"\n\n-----\n\n"+query
+        separator_length = len(RETRIEVAL_CONTEXT_SEPARATOR) if contexts else 0
+        available_length = remaining_context_length - separator_length
+        if available_length <= 0:
+            break
+
+        bounded_context = context[:available_length]
+        contexts.append(bounded_context)
+        urls.append(url)
+        remaining_context_length -= separator_length + len(bounded_context)
+
+        if remaining_context_length == 0:
+            break
+
+    augmented_query = RETRIEVAL_CONTEXT_SEPARATOR.join(contexts)+"\n\n-----\n\n"+query
 
     # Generate response
     response = generate_response(augmented_query)

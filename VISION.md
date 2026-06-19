@@ -26,6 +26,7 @@ Priority:
 - Preserve Twilio link host filtering for generated answer citations
 - Preserve the retrieval metadata guard before answer generation
 - Preserve the retrieval context length guard before prompt assembly
+- Preserve one total retrieval context budget across all matches and separators
 - Preserve one-day cache expiration and the DynamoDB `expires_at` TTL attribute
 - Preserve fixed-size SHA-256 cache keys so raw user queries are not DynamoDB
   partition-key material
@@ -66,6 +67,8 @@ Contribution rules:
   generation.
 - Keep the retrieval context length guard on accepted Pinecone metadata before
   prompt assembly.
+- Keep the total retrieval context budget shared across matches and omit source
+  links for context excluded from the prompt.
 - Keep cache expiration enforced before returning generated-answer entries.
 - Keep cache reads and writes on the same namespaced query digest while
   retaining the existing DynamoDB table and `query_string` attribute.
