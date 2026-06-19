@@ -174,6 +174,74 @@ class AppAuthTests(unittest.TestCase):
         make_query.assert_not_called()
         cache.assert_not_called()
 
+    def test_ask_bypasses_cache_read_failure(self):
+        request = FakeRequest(
+            headers={GPT_DOCS_API_KEY_HEADER: "server-key"},
+            json_body={"query": "How?"},
+        )
+        self.app_module.app.current_request = request
+
+        with patch.dict(os.environ, {GPT_DOCS_API_KEY_ENV: "server-key"}):
+            with patch.object(
+                self.app_module,
+                "get_cached_response",
+                side_effect=RuntimeError("dynamodb unavailable"),
+            ):
+                with patch.object(
+                    self.app_module,
+                    "make_query",
+                    return_value=("answer", ["https://twilio.com/docs"]),
+                ) as make_query:
+                    with patch.object(self.app_module, "store_in_cache") as cache:
+                        with patch.object(
+                            self.app_module.logger, "exception"
+                        ) as log:
+                            response = self.app_module.ask_question()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.body,
+            {"response": "answer", "links": ["https://twilio.com/docs"]},
+        )
+        make_query.assert_called_once_with("How?")
+        cache.assert_called_once_with("How?", "answer", ["https://twilio.com/docs"])
+        log.assert_called_once_with(
+            "Failed to read response cache; bypassing cache"
+        )
+
+    def test_ask_returns_generated_response_when_cache_write_fails(self):
+        request = FakeRequest(
+            headers={GPT_DOCS_API_KEY_HEADER: "server-key"},
+            json_body={"query": "How?"},
+        )
+        self.app_module.app.current_request = request
+
+        with patch.dict(os.environ, {GPT_DOCS_API_KEY_ENV: "server-key"}):
+            with patch.object(self.app_module, "get_cached_response", return_value=None):
+                with patch.object(
+                    self.app_module,
+                    "make_query",
+                    return_value=("answer", ["https://twilio.com/docs"]),
+                ):
+                    with patch.object(
+                        self.app_module,
+                        "store_in_cache",
+                        side_effect=RuntimeError("dynamodb unavailable"),
+                    ):
+                        with patch.object(
+                            self.app_module.logger, "exception"
+                        ) as log:
+                            response = self.app_module.ask_question()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.body,
+            {"response": "answer", "links": ["https://twilio.com/docs"]},
+        )
+        log.assert_called_once_with(
+            "Failed to write response cache; returning generated response"
+        )
+
     def test_ask_returns_generic_error_for_unexpected_failures(self):
         request = FakeRequest(
             headers={GPT_DOCS_API_KEY_HEADER: "server-key"},

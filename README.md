@@ -116,6 +116,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   length failures for accepted long or Unicode queries.
 - Cache hits require string responses and string-list links, and cached links
   are rechecked against the current HTTPS Twilio-host citation policy.
+- Cache availability is not required for fresh answers: read failures fall
+  through to retrieval, and write failures are logged after generation.
 - Keep the classification weight schema limited to numeric `with_code`,
   `minimal_code`, and `no_code` values.
 - Twilio link host filtering keeps generated answer links limited to HTTPS
