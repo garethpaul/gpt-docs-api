@@ -332,6 +332,30 @@ class AppAuthTests(unittest.TestCase):
         )
         self.assertFalse(self.app_module.is_twilio_doc_url(None))
 
+    def test_get_index_uses_standard_pinecone_index_client(self):
+        index = object()
+        self.app_module.pinecone.Index = Mock(return_value=index)
+        self.app_module.pinecone.GRPCIndex = Mock(
+            side_effect=AssertionError("gRPC index client should not be used")
+        )
+
+        with patch.object(self.app_module, "init_pinecone") as init_pinecone:
+            with patch.object(
+                self.app_module, "create_index_if_not_exists"
+            ) as create_index_if_not_exists:
+                self.assertIs(self.app_module.get_index(), index)
+
+        init_pinecone.assert_called_once_with()
+        create_index_if_not_exists.assert_called_once_with(
+            self.app_module.INDEX_NAME,
+            self.app_module.INDEX_DIMENSION,
+            self.app_module.INDEX_METRIC,
+        )
+        self.app_module.pinecone.Index.assert_called_once_with(
+            self.app_module.INDEX_NAME
+        )
+        self.app_module.pinecone.GRPCIndex.assert_not_called()
+
     def test_make_query_filters_links_by_twilio_host(self):
         class FakeIndex:
             def query(self, *args, **kwargs):

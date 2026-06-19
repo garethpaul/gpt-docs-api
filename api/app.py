@@ -221,7 +221,7 @@ def get_index():
     """
     init_pinecone()
     create_index_if_not_exists(INDEX_NAME, INDEX_DIMENSION, INDEX_METRIC)
-    return pinecone.GRPCIndex(INDEX_NAME)
+    return pinecone.Index(INDEX_NAME)
 
 
 def make_query(query: str) -> Tuple[str, List[str]]:

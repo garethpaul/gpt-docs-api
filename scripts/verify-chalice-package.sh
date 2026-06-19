@@ -8,7 +8,32 @@ WORK_DIR=$(mktemp -d "${TMPDIR:-/tmp}/gpt-docs-api-package.XXXXXX")
 cleanup() {
   rm -rf "$WORK_DIR"
 }
-trap cleanup EXIT HUP INT TERM
+
+PACKAGE_PID=
+
+terminate() {
+  signal=$1
+  status=$2
+  trap - HUP INT TERM
+
+  if [ -n "$PACKAGE_PID" ] && kill -0 "$PACKAGE_PID" 2>/dev/null; then
+    kill -s "$signal" "-$PACKAGE_PID" 2>/dev/null ||
+      kill -s "$signal" "$PACKAGE_PID" 2>/dev/null || true
+    sleep 1
+    if kill -0 "$PACKAGE_PID" 2>/dev/null; then
+      kill -KILL "-$PACKAGE_PID" 2>/dev/null ||
+        kill -KILL "$PACKAGE_PID" 2>/dev/null || true
+    fi
+    wait "$PACKAGE_PID" 2>/dev/null || true
+  fi
+
+  exit "$status"
+}
+
+trap cleanup EXIT
+trap 'terminate HUP 129' HUP
+trap 'terminate INT 130' INT
+trap 'terminate TERM 143' TERM
 
 for command in chalice python timeout; do
   if ! command -v "$command" >/dev/null 2>&1; then
@@ -43,6 +68,7 @@ JSON
 
 (
   cd "$PROJECT_DIR"
+  exec env \
     PYTHONPATH= \
     PYTHONNOUSERSITE=1 \
     PIP_REQUIRE_HASHES=1 \
@@ -56,7 +82,19 @@ JSON
     AWS_SESSION_TOKEN=package-verification \
     timeout "${CHALICE_PACKAGE_TIMEOUT_SECONDS:-600}" chalice package \
       --stage package-verification "$OUTPUT_DIR"
-)
+) &
+PACKAGE_PID=$!
+
+if wait "$PACKAGE_PID"; then
+  package_status=0
+else
+  package_status=$?
+fi
+PACKAGE_PID=
+
+if [ "$package_status" -ne 0 ]; then
+  exit "$package_status"
+fi
 
 ARCHIVE="$OUTPUT_DIR/deployment.zip"
 SAM_TEMPLATE="$OUTPUT_DIR/sam.json"
