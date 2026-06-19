@@ -49,6 +49,8 @@
 - Keep `/ask` and `/classify/builder` behind the shared caller API-key guard or a stronger API Gateway/JWT authorizer. Public asset routes may remain unauthenticated, but public asset routes must stay path-bound to `api/chalicelib/public`.
 - Keep request query validation bounded by a maximum query length before routes invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
 - Keep DynamoDB response caching best-effort: cache read failures must continue to fresh retrieval, and cache write failures must not discard a generated response.
+- Malformed retrieval matches containers must normalize to no matches before
+  per-item metadata validation and answer generation.
 - Keep the classification weight schema limited to numeric `with_code`, `minimal_code`, and `no_code` values.
 - Chalice installs deployable dependencies from `api/requirements.txt`; do not
   commit generated `api/vendor/` content, Python bytecode, caches, or package

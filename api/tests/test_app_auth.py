@@ -423,6 +423,42 @@ class AppAuthTests(unittest.TestCase):
             "context a\n\n---\n\ncontext b\n\n-----\n\nHow?",
         )
 
+    def test_make_query_ignores_malformed_matches_containers(self):
+        malformed_matches = (None, "matches", 1, {"metadata": {}})
+
+        for matches in malformed_matches:
+            with self.subTest(matches=matches):
+                class FakeIndex:
+                    def query(self, *args, **kwargs):
+                        return {"matches": matches}
+
+                with patch.object(
+                    self.app_module, "get_embeddings", return_value=[0.1]
+                ):
+                    with patch.object(
+                        self.app_module, "get_index", return_value=FakeIndex()
+                    ):
+                        with patch.object(
+                            self.app_module,
+                            "generate_response",
+                            return_value="answer",
+                        ) as generate_response:
+                            response, links = self.app_module.make_query("How?")
+
+                self.assertEqual(response, "answer")
+                self.assertEqual(links, [])
+                generate_response.assert_called_once_with("\n\n-----\n\nHow?")
+
+    def test_retrieval_matches_accepts_list_and_tuple(self):
+        match = {"metadata": {"text": "context"}}
+
+        self.assertEqual([match], self.app_module.retrieval_matches({
+            "matches": [match]
+        }))
+        self.assertEqual((match,), self.app_module.retrieval_matches(type(
+            "Response", (), {"matches": (match,)}
+        )()))
+
     def test_make_query_truncates_overlong_metadata_text(self):
         long_context = "x" * (self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH + 25)
 
