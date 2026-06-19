@@ -459,6 +459,54 @@ class AppAuthTests(unittest.TestCase):
             "Response", (), {"matches": (match,)}
         )()))
 
+    def test_retrieval_matches_handles_unsupported_accessors(self):
+        match = {"metadata": {"text": "context"}}
+
+        class NonCallableGetResponse:
+            get = None
+            matches = [match]
+
+        class RaisingGetResponse:
+            def get(self, key, default):
+                raise RuntimeError("provider mapping failure")
+
+        class RaisingMatchesResponse:
+            @property
+            def matches(self):
+                raise RuntimeError("provider attribute failure")
+
+        self.assertEqual(
+            [match],
+            self.app_module.retrieval_matches(NonCallableGetResponse()),
+        )
+        self.assertEqual((), self.app_module.retrieval_matches(RaisingGetResponse()))
+        self.assertEqual(
+            (),
+            self.app_module.retrieval_matches(RaisingMatchesResponse()),
+        )
+
+    def test_make_query_uses_query_only_prompt_after_accessor_failure(self):
+        class RaisingGetResponse:
+            def get(self, key, default):
+                raise RuntimeError("provider mapping failure")
+
+        class FakeIndex:
+            def query(self, *args, **kwargs):
+                return RaisingGetResponse()
+
+        with patch.object(self.app_module, "get_embeddings", return_value=[0.1]):
+            with patch.object(self.app_module, "get_index", return_value=FakeIndex()):
+                with patch.object(
+                    self.app_module,
+                    "generate_response",
+                    return_value="answer",
+                ) as generate_response:
+                    response, links = self.app_module.make_query("How?")
+
+        self.assertEqual(response, "answer")
+        self.assertEqual(links, [])
+        generate_response.assert_called_once_with("\n\n-----\n\nHow?")
+
     def test_make_query_truncates_overlong_metadata_text(self):
         long_context = "x" * (self.app_module.MAX_RETRIEVAL_CONTEXT_LENGTH + 25)
 
