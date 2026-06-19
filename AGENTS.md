@@ -15,12 +15,13 @@
 
 ## Development commands
 
-- Install dependencies: no repository-specific install command is documented.
+- Install dependencies: `python -m pip install -r api/requirements.txt`
 - Full baseline: `make check`
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
 - Tests: `make test`
 - Build: `make build`
+- Deployment package: `make package-check` after installing API requirements
 - If a command above skips because a platform toolchain is missing, verify on a machine with that SDK before claiming platform behavior is tested.
 
 ## Coding conventions
@@ -29,7 +30,7 @@
 
 ## Testing guidance
 
-- Test-related files detected: `api/chalicelib/public/test.html`, `api/tests/`, `api/tests/test_app_auth.py`, `api/tests/test_auth.py`, `api/tests/test_cache.py`, `api/tests/test_classification.py`, `api/tests/test_utils.py`, `api/vendor/aiohttp/pytest_plugin.py`, `api/vendor/aiohttp/test_utils.py`, `api/vendor/numpy/_pyinstaller/test_pyinstaller.py`
+- Test-related files detected: `api/chalicelib/public/test.html`, `api/tests/`, `api/tests/test_app_auth.py`, `api/tests/test_auth.py`, `api/tests/test_cache.py`, `api/tests/test_classification.py`, `api/tests/test_utils.py`
 - Start with the narrowest relevant test or Make target, then run `make check` before handing off if the change is not documentation-only.
 - Keep README verification notes in sync when commands, fixtures, or supported toolchains change.
 
@@ -48,7 +49,11 @@
 - Keep `/ask` and `/classify/builder` behind the shared caller API-key guard or a stronger API Gateway/JWT authorizer. Public asset routes may remain unauthenticated, but public asset routes must stay path-bound to `api/chalicelib/public`.
 - Keep request query validation bounded by a maximum query length before routes invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
 - Keep the classification weight schema limited to numeric `with_code`, `minimal_code`, and `no_code` values.
-- Checked-in binary libraries are present; do not replace them without documenting toolchain and checksums.
+- Chalice installs deployable dependencies from `api/requirements.txt`; do not
+  commit generated `api/vendor/` content, Python bytecode, caches, or package
+  archives.
+- Keep `api/iam-policy.json` limited to the `gpt_docs` cache operations and
+  CloudWatch Logs actions required by the Lambda runtime.
 
 ## Agent workflow
 
