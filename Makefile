@@ -1,19 +1,21 @@
 .PHONY: build check compile lint package-check test verify
 
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
 lint: check
 
 test:
-	PYTHONPATH=api python -m unittest discover -s api/tests
+	@cd "$(ROOT)" && PYTHONPATH=api python -m unittest discover -s api/tests
 
 build: compile
 
 compile:
-	python -m compileall -q api/app.py api/chalicelib api/tests
+	@cd "$(ROOT)" && python -m compileall -q api/app.py api/chalicelib api/tests
 
 check:
-	scripts/check-baseline.sh
+	@"$(ROOT)/scripts/check-baseline.sh"
 
 package-check:
-	scripts/verify-chalice-package.sh
+	@"$(ROOT)/scripts/verify-chalice-package.sh"
 
 verify: test compile check
