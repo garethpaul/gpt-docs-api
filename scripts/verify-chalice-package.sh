@@ -20,7 +20,8 @@ done
 PROJECT_DIR="$WORK_DIR/project"
 OUTPUT_DIR="$WORK_DIR/output"
 mkdir -p "$PROJECT_DIR/.chalice"
-cp "$API_DIR/app.py" "$API_DIR/requirements.txt" "$PROJECT_DIR/"
+cp "$API_DIR/app.py" "$API_DIR/requirements.in" \
+  "$API_DIR/requirements.txt" "$PROJECT_DIR/"
 cp -R "$API_DIR/chalicelib" "$PROJECT_DIR/chalicelib"
 cp "$API_DIR/iam-policy.json" \
   "$PROJECT_DIR/.chalice/policy-package-verification.json"
@@ -44,6 +45,7 @@ JSON
   cd "$PROJECT_DIR"
   PYTHONPATH= \
     PYTHONNOUSERSITE=1 \
+    PIP_REQUIRE_HASHES=1 \
     AWS_DEFAULT_REGION=us-east-1 \
     AWS_EC2_METADATA_DISABLED=true \
     AWS_CONFIG_FILE=/dev/null \

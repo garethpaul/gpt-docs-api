@@ -15,7 +15,7 @@
 
 ## Development commands
 
-- Install dependencies: `python -m pip install -r api/requirements.txt`
+- Install dependencies: `python -m pip install --require-hashes -r api/requirements.txt`
 - Full baseline: `make check`
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
@@ -53,6 +53,9 @@
 - Chalice installs deployable dependencies from `api/requirements.txt`; do not
   commit generated `api/vendor/` content, Python bytecode, caches, or package
   archives.
+- Regenerate the hash-addressed Python 3.10 deployment lock from
+  `api/requirements.in` with the exact `uv pip compile` command recorded in the
+  lock header; do not hand-edit resolved versions or hashes.
 - Keep `api/iam-policy.json` limited to the `gpt_docs` cache operations and
   CloudWatch Logs actions required by the Lambda runtime.
 

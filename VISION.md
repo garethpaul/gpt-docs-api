@@ -37,8 +37,9 @@ Priority:
 - Keep the classification weight schema explicit and numeric before returning
   model output to callers
 - Keep unauthenticated public asset serving path-bound to checked-in assets
-- Keep deployable dependencies sourced from `api/requirements.txt`, with no
-  checked-in interpreter-specific `api/vendor/` environment
+- Keep deployment dependencies exact and hash-addressed in the generated
+  Python 3.10 lock, with direct intent separated and no checked-in
+  interpreter-specific `api/vendor/` environment
 - Keep the generated Lambda role limited to `gpt_docs` cache reads/writes and
   standard CloudWatch Logs delivery
 

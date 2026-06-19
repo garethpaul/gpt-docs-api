@@ -7,6 +7,7 @@ README="$ROOT_DIR/README.md"
 VISION="$ROOT_DIR/VISION.md"
 CHANGES="$ROOT_DIR/CHANGES.md"
 REQUIREMENTS="$ROOT_DIR/api/requirements.txt"
+REQUIREMENTS_INPUT="$ROOT_DIR/api/requirements.in"
 IAM_POLICY="$ROOT_DIR/api/iam-policy.json"
 APP="$ROOT_DIR/api/app.py"
 AUTH="$ROOT_DIR/api/chalicelib/auth.py"
@@ -45,6 +46,8 @@ TOTAL_RETRIEVAL_CONTEXT_PLAN="$ROOT_DIR/docs/plans/2026-06-13-total-retrieval-co
 CACHE_RESPONSE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-cached-response-validation.md"
 GRACEFUL_CACHE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-graceful-cache-bypass.md"
 LOCATION_INDEPENDENT_MAKE_PLAN="$ROOT_DIR/docs/plans/2026-06-13-location-independent-make.md"
+DEPENDENCY_LOCK_PLAN="$ROOT_DIR/docs/plans/2026-06-15-hashed-dependency-lock.md"
+DEPENDENCY_LOCK_CHECK="$ROOT_DIR/scripts/check-dependency-lock.py"
 
 require_file() {
   path=$1
@@ -62,6 +65,7 @@ for path in \
   "VISION.md" \
   "Makefile" \
   "vercel.json" \
+  "api/requirements.in" \
   "api/requirements.txt" \
   "api/iam-policy.json" \
   "api/app.py" \
@@ -97,11 +101,15 @@ for path in \
   "docs/plans/2026-06-13-cached-response-validation.md" \
   "docs/plans/2026-06-13-graceful-cache-bypass.md" \
   "docs/plans/2026-06-13-location-independent-make.md" \
+  "docs/plans/2026-06-15-hashed-dependency-lock.md" \
+  "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
 done
+
+python3 "$DEPENDENCY_LOCK_CHECK" "$REQUIREMENTS_INPUT" "$REQUIREMENTS"
 
 python - "$IAM_POLICY" <<'PY'
 import json
@@ -181,17 +189,6 @@ if [ -n "$tracked_artifacts" ]; then
   exit 1
 fi
 
-for requirement in \
-  "chalice==1.33.0" \
-  "openai==0.28.1" \
-  "pinecone-client[grpc]==2.2.4" \
-  "boto3==1.43.18"; do
-  if ! grep -Fq "$requirement" "$REQUIREMENTS"; then
-    printf '%s\n' "api/requirements.txt must keep compatible pin: $requirement" >&2
-    exit 1
-  fi
-done
-
 checkout_credential_contract=$(
   awk '
     /uses: actions\/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10/ {
@@ -223,8 +220,10 @@ if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   [ "$checkout_credential_contract" != "1:1" ] ||
   ! grep -Fq "actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405" "$CI_WORKFLOW" ||
   ! grep -Fq 'python-version: "3.10"' "$CI_WORKFLOW" ||
+  ! grep -Fq "api/requirements.in" "$CI_WORKFLOW" ||
   ! grep -Fq "api/requirements.txt" "$CI_WORKFLOW" ||
   ! grep -Fq "python -m pip install --upgrade pip==26.1.2" "$CI_WORKFLOW" ||
+  ! grep -Fq "python -m pip install --require-hashes -r api/requirements.txt" "$CI_WORKFLOW" ||
   ! grep -Fq "python -m pip check" "$CI_WORKFLOW" ||
   ! grep -Fq "make package-check" "$CI_WORKFLOW" ||
   ! grep -Fq "make check" "$CI_WORKFLOW"; then
@@ -270,6 +269,9 @@ if ! grep -Fq "scripts/verify-chalice-package.sh" "$MAKEFILE" ||
   ! grep -Fq "AWS_DEFAULT_REGION=us-east-1" "$PACKAGE_CHECK" ||
   ! grep -Fq "AWS_SHARED_CREDENTIALS_FILE=/dev/null" "$PACKAGE_CHECK" ||
   ! grep -Fq "PYTHONNOUSERSITE=1" "$PACKAGE_CHECK" ||
+  ! grep -Fq "PIP_REQUIRE_HASHES=1" "$PACKAGE_CHECK" ||
+  ! grep -Fq '"$API_DIR/requirements.in"' "$PACKAGE_CHECK" ||
+  ! grep -Fq '"$API_DIR/requirements.txt"' "$PACKAGE_CHECK" ||
   ! grep -Fq '"autogen_policy": false' "$PACKAGE_CHECK" ||
   ! grep -Fq "policy-package-verification.json" "$PACKAGE_CHECK" ||
   ! grep -Fq "timeout" "$PACKAGE_CHECK" ||
@@ -834,6 +836,38 @@ fi
 if ! grep -Fq "GitHub Actions" "$CI_PLAN" ||
   ! grep -Fq "make check" "$CI_PLAN"; then
   printf '%s\n' "CI baseline plan must record hosted make check verification." >&2
+  exit 1
+fi
+
+python3 - "$DEPENDENCY_LOCK_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+verification = plan.split("## Verification Completed\n", 1)[-1]
+required = (
+    "47 exact, hash-addressed packages",
+    "Python 3.10 hash-required install passed",
+    "temporary Chalice package gate passed",
+    "Ten hostile mutations failed",
+    "No live AWS, OpenAI, Pinecone, Twilio, or API Gateway operations were executed",
+)
+if (
+    statuses != ["status: completed"]
+    or "## Verification Completed\n" not in plan
+    or any(item not in verification for item in required)
+):
+    raise SystemExit("Hashed dependency-lock plan must record completed verification.")
+PY
+
+if ! grep -Fq "hash-addressed Python 3.10 dependency lock" "$README" ||
+  ! grep -Fq "Chalice deployment dependencies use hash-required deployment dependency" "$ROOT_DIR/SECURITY.md" ||
+  ! grep -Fq "Keep deployment dependencies exact and hash-addressed" "$VISION" ||
+  ! grep -Fq "Added a generated, hash-addressed Python 3.10 deployment dependency lock" "$CHANGES" ||
+  ! grep -Fq "Regenerate the hash-addressed Python 3.10 deployment lock" "$ROOT_DIR/AGENTS.md"; then
+  printf '%s\n' "Project guidance must document the hashed dependency lock." >&2
   exit 1
 fi
 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
