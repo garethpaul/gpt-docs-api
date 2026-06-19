@@ -8,7 +8,7 @@ DIRECT_REQUIREMENTS = {
     "boto3==1.43.18",
     "chalice==1.33.0",
     "openai==2.41.0",
-    "pinecone-client[grpc]==2.2.4",
+    "pinecone-client==2.2.4",
 }
 LOCK_COMMAND = (
     "uv pip compile api/requirements.in --python-version 3.10 "
@@ -16,7 +16,7 @@ LOCK_COMMAND = (
     "--generate-hashes "
     "--no-annotate --output-file api/requirements.txt"
 )
-EXPECTED_PACKAGE_COUNT = 50
+EXPECTED_PACKAGE_COUNT = 45
 PACKAGE = re.compile(r"^([A-Za-z0-9_.-]+)==([^\s\\]+) \\$")
 HASH = re.compile(r"^    --hash=sha256:[0-9a-f]{64}(?: \\)?$")
 

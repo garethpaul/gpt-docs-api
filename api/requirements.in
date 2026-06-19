@@ -1,4 +1,4 @@
 chalice==1.33.0
 openai==2.41.0
-pinecone-client[grpc]==2.2.4
+pinecone-client==2.2.4
 boto3==1.43.18
