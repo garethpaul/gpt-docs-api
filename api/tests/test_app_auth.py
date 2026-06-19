@@ -423,6 +423,78 @@ class AppAuthTests(unittest.TestCase):
             "context a\n\n---\n\ncontext b\n\n-----\n\nHow?",
         )
 
+    def test_retrieval_metadata_handles_unsupported_accessors(self):
+        metadata = {"text": "context"}
+
+        class ObjectMatch:
+            def __init__(self):
+                self.metadata = metadata
+
+        class NonCallableGetMatch(dict):
+            get = None
+
+        class RaisingGetMatch(dict):
+            def get(self, key):
+                raise RuntimeError("provider mapping failure")
+
+        class RaisingMetadataMatch:
+            get = None
+
+            @property
+            def metadata(self):
+                raise RuntimeError("provider attribute failure")
+
+        self.assertEqual(metadata, self.app_module.retrieval_metadata({
+            "metadata": metadata,
+        }))
+        self.assertEqual(
+            metadata,
+            self.app_module.retrieval_metadata(ObjectMatch()),
+        )
+        self.assertIsNone(
+            self.app_module.retrieval_metadata(NonCallableGetMatch()),
+        )
+        self.assertIsNone(
+            self.app_module.retrieval_metadata(RaisingGetMatch()),
+        )
+        self.assertIsNone(
+            self.app_module.retrieval_metadata(RaisingMetadataMatch()),
+        )
+
+    def test_make_query_skips_metadata_accessor_failures(self):
+        class RaisingGetMatch(dict):
+            def get(self, key):
+                raise RuntimeError("provider mapping failure")
+
+        class FakeIndex:
+            def query(self, *args, **kwargs):
+                return {
+                    "matches": [
+                        RaisingGetMatch(),
+                        {
+                            "metadata": {
+                                "text": "usable context",
+                                "url": "https://www.twilio.com/docs/usable",
+                            }
+                        },
+                    ]
+                }
+
+        with patch.object(self.app_module, "get_embeddings", return_value=[0.1]):
+            with patch.object(self.app_module, "get_index", return_value=FakeIndex()):
+                with patch.object(
+                    self.app_module,
+                    "generate_response",
+                    return_value="answer",
+                ) as generate_response:
+                    response, links = self.app_module.make_query("How?")
+
+        self.assertEqual(response, "answer")
+        self.assertEqual(links, ["https://www.twilio.com/docs/usable"])
+        generate_response.assert_called_once_with(
+            "usable context\n\n-----\n\nHow?"
+        )
+
     def test_make_query_ignores_malformed_matches_containers(self):
         malformed_matches = (None, "matches", 1, {"metadata": {}})
 

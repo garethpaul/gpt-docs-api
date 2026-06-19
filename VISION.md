@@ -29,6 +29,8 @@ Priority:
   metadata iteration and query-only answer generation
 - Unusable retrieval response accessors normalize to no matches while mapping
   and object response compatibility remains intact
+- Unusable retrieval metadata accessors normalize to missing metadata while
+  mapping and object match compatibility remains intact
 - Preserve the retrieval context length guard before prompt assembly
 - Preserve one total retrieval context budget across all matches and separators
 - Preserve one-day cache expiration and the DynamoDB `expires_at` TTL attribute
