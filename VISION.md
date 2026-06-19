@@ -30,6 +30,7 @@ Priority:
 - Preserve one-day cache expiration and the DynamoDB `expires_at` TTL attribute
 - Preserve fixed-size SHA-256 cache keys so raw user queries are not DynamoDB
   partition-key material
+- Treat malformed cache payloads as misses and revalidate cached citations
 - Keep unexpected route failures behind generic 500 errors
 - Keep request validation bounded by a maximum query length before model work
 - Keep the classification weight schema explicit and numeric before returning

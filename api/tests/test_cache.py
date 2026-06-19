@@ -91,6 +91,23 @@ class CacheTests(unittest.TestCase):
         self.assertIsNone(get_cached_response("expired", table=expired, now=100))
         self.assertIsNone(get_cached_response("legacy", table=missing_expiry, now=100))
 
+    def test_get_cached_response_rejects_malformed_payload_shape(self):
+        from chalicelib.cache import get_cached_response
+
+        malformed_items = [
+            {"links": ["url"], "expires_at": 200},
+            {"response": 123, "links": ["url"], "expires_at": 200},
+            {"response": "answer", "expires_at": 200},
+            {"response": "answer", "links": "url", "expires_at": 200},
+            {"response": "answer", "links": [123], "expires_at": 200},
+        ]
+
+        for item in malformed_items:
+            with self.subTest(item=item):
+                self.assertIsNone(
+                    get_cached_response("legacy", table=FakeTable(item), now=100)
+                )
+
     def test_store_in_cache_writes_existing_item_shape(self):
         from chalicelib.cache import cache_key, store_in_cache
 

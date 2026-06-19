@@ -97,6 +97,15 @@ def is_twilio_doc_url(url):
     )
 
 
+def filter_twilio_doc_urls(urls):
+    """Return unique HTTPS Twilio documentation links in deterministic order."""
+    filtered_urls = []
+    for url in urls:
+        if is_twilio_doc_url(url) and url not in filtered_urls:
+            filtered_urls.append(url)
+    return sorted(filtered_urls)
+
+
 def metadata_text_and_url(item):
     """Return usable retrieval context and URL metadata from a Pinecone match."""
     metadata = item.get('metadata') if isinstance(item, dict) else getattr(
@@ -238,11 +247,7 @@ def make_query(query: str) -> Tuple[str, List[str]]:
     response = generate_response(augmented_query)
 
     # Keep this explicit loop compatible with Chalice's IAM policy analyzer.
-    filtered_urls = []
-    for url in urls:
-        if is_twilio_doc_url(url) and url not in filtered_urls:
-            filtered_urls.append(url)
-    urls = sorted(filtered_urls)
+    urls = filter_twilio_doc_urls(urls)
 
     return response, urls
 
@@ -286,7 +291,8 @@ def ask_question():
         cache_entry = get_cached_response(query)
         if cache_entry:
             return Response(body={'response': cache_entry['response'],
-                                  'links': cache_entry['links']},
+                                  'links': filter_twilio_doc_urls(
+                                      cache_entry['links'])},
                             status_code=200)
 
         # Get the response and links using the make_query function
