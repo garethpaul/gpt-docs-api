@@ -1,6 +1,6 @@
 .PHONY: build check compile lint package-check test verify
 
-ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 lint: check
 
