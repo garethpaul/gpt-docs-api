@@ -186,7 +186,7 @@ for target in "lint:" "test:" "build: compile" "compile:" "check:" "package-chec
 done
 
 for make_contract in \
-  'ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))' \
+  'override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))' \
   'cd "$(ROOT)" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=api python -m unittest discover -s api/tests' \
   'cd "$(ROOT)" && python "$(ROOT)/scripts/check-python-syntax.py" api/app.py api/chalicelib api/tests' \
   '"$(ROOT)/scripts/check-baseline.sh"' \
