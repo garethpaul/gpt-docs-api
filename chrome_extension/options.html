@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GPT Dev Docs Settings</title>
+    <style>
+      body { font: 16px system-ui, sans-serif; margin: 2rem; max-width: 42rem; }
+      label { display: block; font-weight: 600; margin-top: 1rem; }
+      input { box-sizing: border-box; margin-top: 0.4rem; padding: 0.6rem; width: 100%; }
+      button { margin-top: 1.25rem; padding: 0.6rem 1rem; }
+      #status { min-height: 1.5rem; }
+    </style>
+  </head>
+  <body>
+    <h1>GPT Dev Docs Settings</h1>
+    <p>Configure your own authenticated GPT Docs API deployment. The API key stays only for this browser session.</p>
+    <form id="settingsForm">
+      <label for="apiBaseUrl">HTTPS API base URL</label>
+      <input id="apiBaseUrl" name="apiBaseUrl" type="url" required placeholder="https://api.example.com/api">
+      <label for="apiKey">API key</label>
+      <input id="apiKey" name="apiKey" type="password" required autocomplete="off">
+      <button type="submit">Save for this session</button>
+    </form>
+    <p id="status" role="status" aria-live="polite"></p>
+    <script src="options.js"></script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "102",
   "name": "GPT Dev Docs",
   "version": "1.0",
   "description": "Add GPT Dev Docs to Twilio Docs",
@@ -21,8 +22,13 @@
   "permissions": [
     "activeTab",
     "tabs",
-    "management"
+    "management",
+    "storage"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
   "web_accessible_resources": [
     {
       "resources": ["logo-nav.svg", "question.svg", "gpt-docs-nav.png", "gpt-docs-nav.svg"],

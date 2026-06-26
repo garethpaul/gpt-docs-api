@@ -1,5 +1,23 @@
 # Changes
 
+## 2026-06-26T23:40:00Z
+
+- **Priority:** P0 authentication compatibility and credential containment.
+- **Summary:** Extension clients require a user-supplied HTTPS API URL and browser-session API key; never ship the deployment's shared secret.
+- **Work:** Added mirrored Manifest V3 options/background assets, session-only
+  key storage, fixed-route authenticated request helpers, and CORS parity for
+  `/ask` and `/classify/builder`.
+- **Tests:** All 65 API tests, four Make aliases, `make verify`, external-path
+  `make check`, the 6,313-entry Chalice package check, thirteen hostile mutations,
+  extension rendering/authentication checks, leak scanning, and diff checks
+  passed without live service calls.
+- **Finding:** Both bundled clients omitted credentials, and the classification
+  route lacked the CORS configuration required for its custom API-key header.
+- **Blocker:** The repository owner's hosted deployment still needs a separate
+  identity-aware service before it can safely support unrelated public users.
+- **Next action:** Complete local gates, hostile mutations, review, hosted
+  checks, and exact-head merge for issue 36.
+
 ## 2026-06-26T22:48:23Z
 
 - **Priority:** Security and request resource boundaries.

@@ -36,9 +36,11 @@ class FakeChalice:
     def __init__(self, app_name):
         self.app_name = app_name
         self.current_request = None
+        self.routes = []
 
     def route(self, *args, **kwargs):
         def decorator(func):
+            self.routes.append((args, kwargs, func.__name__))
             return func
 
         return decorator
@@ -71,6 +73,22 @@ class AppAuthTests(unittest.TestCase):
 
     def tearDown(self):
         sys.modules.pop("app", None)
+
+    def test_authenticated_browser_routes_share_cors_configuration(self):
+        route_options = {
+            args[0]: kwargs
+            for args, kwargs, _ in self.app_module.app.routes
+        }
+
+        self.assertIs(route_options["/ask"]["cors"], self.app_module.cors_config)
+        self.assertIs(
+            route_options["/classify/builder"]["cors"],
+            self.app_module.cors_config,
+        )
+        self.assertIn(
+            GPT_DOCS_API_KEY_HEADER,
+            self.app_module.cors_config.kwargs["allow_headers"],
+        )
 
     def test_ask_rejects_unauthenticated_callers_before_body_or_model_work(self):
         request = FakeRequest(headers={}, json_body={"query": "How?"})

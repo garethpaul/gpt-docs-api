@@ -14,6 +14,8 @@ quality gates live in [`README.md`](README.md).
 The goal is to keep the experiment useful, testable, and safe around API keys,
 documentation crawling, and generated answers.
 
+Extension clients require a user-supplied HTTPS API URL and browser-session API key; never ship the deployment's shared secret.
+
 The current focus is:
 
 Priority:

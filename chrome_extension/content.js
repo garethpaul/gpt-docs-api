@@ -28,6 +28,67 @@ function safeHttpUrl(value) {
   return null;
 }
 
+function normalizeApiBaseUrl(value) {
+  try {
+    var parsed = new URL(String(value).trim());
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.username ||
+      parsed.password ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return null;
+    }
+    return parsed.href.replace(/\/+$/, "");
+  } catch (error) {
+    return null;
+  }
+}
+
+function loadClientConfiguration() {
+  return new Promise(function (resolve) {
+    chrome.runtime.sendMessage(
+      { type: "getClientConfiguration" },
+      function (configuration) {
+        if (chrome.runtime.lastError) {
+          resolve({});
+          return;
+        }
+        resolve(configuration || {});
+      },
+    );
+  });
+}
+
+async function requestApi(route, payload) {
+  if (route !== "/ask" && route !== "/classify/builder") {
+    throw new Error("Unsupported API route.");
+  }
+
+  var configuration = await loadClientConfiguration();
+  var apiBaseUrl = normalizeApiBaseUrl(configuration.apiBaseUrl);
+  var apiKey = String(configuration.apiKey || "").trim();
+  if (!apiBaseUrl || !apiKey) {
+    throw new Error(
+      "Configure an HTTPS API URL and browser-session API key in extension options.",
+    );
+  }
+
+  var response = await fetch(apiBaseUrl + route, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-GPT-Docs-API-Key": apiKey,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
+  }
+  return response.json();
+}
+
 // Create a new <style> element
 var styleElement = document.createElement("style");
 styleElement.type = "text/css";
@@ -176,29 +237,8 @@ function addResponse(text, links, parentElement) {
 }
 
 async function sendAhoy(query) {
-  // Define the endpoint URL
-  const url =
-    "https://wj2mszjum0.execute-api.us-west-2.amazonaws.com/api/classify/builder";
-
-  // Define the request options
-  const requestOptions = {
-    method: "POST", // Specify the request method
-    headers: {
-      "Content-Type": "application/json", // Set the content type to JSON
-    },
-    body: JSON.stringify(query), // Convert the query object to a JSON string
-  };
-
   try {
-    // Make the fetch request and handle the response
-    const response = await fetch(url, requestOptions);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    // Parse the response JSON
-    const responseData = await response.json();
-    return responseData;
+    return await requestApi("/classify/builder", query);
   } catch (error) {
     console.error("Error making POST request:", error);
     return null;
@@ -357,41 +397,27 @@ function addModal(b) {
       if (existingResponse) {
         existingResponse.remove();
       }
-      // Make an api request to http://localhost:3000/ask
-      // with the input value as the query
-      // and the response data as the response
-      // and the modal as the modal
       createLoader(modal);
-      fetch("https://wj2mszjum0.execute-api.us-west-2.amazonaws.com/api/ask", {
-        //fetch("http://localhost:8000/ask", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      requestApi("/ask", {
+        query: input.value,
+      }).then((data) => {
+        // remove the loader
+        removeLoader(modal);
+        // if there is an existing response remove it
+        addResponse(data.response, data.links, modal);
+        // Send the data to ahoy
+        sendAhoy({
           query: input.value,
-        }),
-      }).then((response) => {
-        response.json().then((data) => {
-          // remove the loader
-          removeLoader(modal);
-          // if there is an existing response remove it
-          addResponse(data.response, data.links, modal);
-          // Send the data to ahoy
-          sendAhoy({
-            query: input.value,
-          }).then((response) => {
-            // if the response is successful
-            if (response.status === 200) {
-              // log the response
-              if (response.data) {
-                analytics.track("user_type", response.data);
-              }
-            }
-          });
-          // clear the input value
-          clearInput();
+        }).then((response) => {
+          if (response && response.weights) {
+            analytics.track("user_type", response.weights);
+          }
         });
+        // clear the input value
+        clearInput();
+      }).catch((error) => {
+        removeLoader(modal);
+        addResponse(error.message, [], modal);
       });
     });
 
