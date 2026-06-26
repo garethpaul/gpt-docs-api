@@ -357,7 +357,7 @@ def hello_world():
     return resp
 
 
-@app.route('/classify/builder', methods=['POST'])
+@app.route('/classify/builder', methods=['POST'], cors=cors_config)
 def classify_builder():
     """
     An endpoint for classifying users based on the question they ask.

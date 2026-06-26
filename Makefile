@@ -1,4 +1,4 @@
-.PHONY: build check compile lint package-check test verify
+.PHONY: build check compile lint mutations package-check test verify
 
 override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
@@ -11,6 +11,9 @@ build: compile
 
 compile:
 	@cd "$(ROOT)" && python "$(ROOT)/scripts/check-python-syntax.py" api/app.py api/chalicelib api/tests
+
+mutations:
+	@cd "$(ROOT)" && PYTHONDONTWRITEBYTECODE=1 python "$(ROOT)/scripts/test-extension-auth-mutations.py"
 
 check:
 	@"$(ROOT)/scripts/check-baseline.sh"

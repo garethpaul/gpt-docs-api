@@ -105,6 +105,13 @@ When the required SDK or runtime is unavailable, use static checks and source re
   `/classify/builder`. Callers must send the same value in
   `X-GPT-Docs-API-Key` or `Authorization: Bearer <token>` before those routes
   read request bodies or spend server-side OpenAI/Pinecone credentials.
+- Extension clients require a user-supplied HTTPS API URL and browser-session API key; never ship the deployment's shared secret. Open the extension options
+  page after each browser restart, configure the HTTPS base URL for your own
+  deployment, and enter its key. The base URL persists locally; the key uses
+  memory-only `chrome.storage.session`. The deployment must allow the Twilio
+  Docs origins, `Content-Type`, and `X-GPT-Docs-API-Key` through CORS.
+  Because session storage is a Chrome 102+ Manifest V3 API, both bundled
+  manifests declare Chrome 102 as their minimum version.
 - Set `OPENAI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENVIRONMENT`, and AWS
   credentials only in local or deployment environment configuration.
 
@@ -115,6 +122,9 @@ When the required SDK or runtime is unavailable, use static checks and source re
   a stronger API Gateway/JWT authorizer. Public asset routes may remain
   unauthenticated, but public asset routes must stay path-bound to
   `api/chalicelib/public`.
+- Keep bundled extension requests limited to the fixed `/ask` and
+  `/classify/builder` routes. Do not persist user keys in local or sync storage,
+  include them in logs, or accept non-HTTPS API origins.
 - Keep the maximum query length applied to the raw request value before trimming
   or invoking OpenAI, Pinecone, DynamoDB, or cache helpers.
 - DynamoDB cache entries expire after one day in application reads and include

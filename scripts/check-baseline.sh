@@ -57,6 +57,9 @@ RETRIEVAL_METADATA_ACCESSOR_PLAN="$ROOT_DIR/docs/plans/2026-06-17-retrieval-meta
 OPENAI_CLIENT_PLAN="$ROOT_DIR/docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md"
 BYTECODE_FREE_PLAN="$ROOT_DIR/docs/plans/2026-06-18-bytecode-free-python-gates.md"
 PACKAGE_SIGNAL_PLAN="$ROOT_DIR/docs/plans/2026-06-18-chalice-package-signal-forwarding.md"
+EXTENSION_AUTH_DESIGN="$ROOT_DIR/docs/plans/2026-06-26-extension-client-auth-design.md"
+EXTENSION_AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-26-extension-client-auth.md"
+EXTENSION_AUTH_CHECK="$ROOT_DIR/scripts/check-extension-auth.sh"
 SYNTAX_CHECK="$ROOT_DIR/scripts/check-python-syntax.py"
 
 require_file() {
@@ -121,9 +124,19 @@ for path in \
   "docs/plans/2026-06-17-002-refactor-openai-client-v2-plan.md" \
   "docs/plans/2026-06-18-bytecode-free-python-gates.md" \
   "docs/plans/2026-06-18-chalice-package-signal-forwarding.md" \
+  "docs/plans/2026-06-26-extension-client-auth-design.md" \
+  "docs/plans/2026-06-26-extension-client-auth.md" \
+  "chrome_extension/background.js" \
+  "chrome_extension/options.html" \
+  "chrome_extension/options.js" \
+  "api/chalicelib/public/background.js" \
+  "api/chalicelib/public/options.html" \
+  "api/chalicelib/public/options.js" \
   "scripts/check-python-syntax.py" \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
+  "scripts/check-extension-auth.sh" \
+  "scripts/test-extension-auth-mutations.py" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
   require_file "$path"
@@ -1272,9 +1285,45 @@ if (
     )
 PY
 
+extension_auth_guidance="Extension clients require a user-supplied HTTPS API URL and browser-session API key; never ship the deployment's shared secret."
+for document in "$ROOT_DIR/AGENTS.md" "$README" "$ROOT_DIR/SECURITY.md" "$VISION" "$CHANGES"; do
+  if ! grep -Fq "$extension_auth_guidance" "$document"; then
+    printf '%s\n' "$document must document the extension authentication trust model." >&2
+    exit 1
+  fi
+done
+
+python3 - "$EXTENSION_AUTH_PLAN" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+plan = Path(sys.argv[1]).read_text(encoding="utf-8")
+statuses = re.findall(r"^status: .+$", plan, flags=re.MULTILINE)
+verification = plan.split("## Verification Completed\n", 1)[-1]
+required = (
+    "both authenticated extension routes passed",
+    "complete API suite passed",
+    "All four Make gates passed",
+    "external-directory Make gate passed",
+    "hostile extension authentication mutations were rejected",
+    "No live OpenAI, Pinecone, DynamoDB, AWS, Twilio, API Gateway, browser publication, or deployment operation was executed",
+)
+if (
+    statuses != ["status: completed"]
+    or "## Verification Completed\n" not in plan
+    or any(item not in verification for item in required)
+    or re.search(r"\b(?:pending|todo|tbd|not run|not yet)\b", verification, re.IGNORECASE)
+):
+    raise SystemExit(
+        "Extension client authentication plan must record completed verification."
+    )
+PY
+
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python "$SYNTAX_CHECK" "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 "$EXTENSION_RENDERING_CHECK"
+"$EXTENSION_AUTH_CHECK"
 
 generated_python_artifacts=$(
   find "$ROOT_DIR" \

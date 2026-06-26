@@ -40,6 +40,10 @@ Helpful reports include:
 
 For web services, APIs, sockets, or scraping workflows, prioritize reports involving authentication bypass, authorization errors, injection, server-side request forgery, unsafe deserialization, credential leakage, data exposure, or denial-of-service conditions. Use test accounts and minimal proof-of-concept traffic only.
 
+Extension clients require a user-supplied HTTPS API URL and browser-session API key; never ship the deployment's shared secret. Keep browser keys in
+`chrome.storage.session`, limit requests to the two authenticated API routes,
+and require CORS to admit the API-key header without enabling credentials.
+
 Validate the maximum raw query length before trimming whitespace so padded
 requests cannot bypass the application-level resource boundary.
 

@@ -45,6 +45,7 @@
 
 - Detected references to OpenAI, Pinecone, AWS, and Twilio. Keep API keys, OAuth credentials, tokens, and account-specific values in local configuration only.
 - Set `GPT_DOCS_API_KEY` on deployments that expose `/ask` or `/classify/builder`. Callers must send the same value in `X-GPT-Docs-API-Key` or `Authorization: Bearer <token>` before those routes read request bodies or spend server-side OpenAI/Pinecone credentials.
+- Extension clients require a user-supplied HTTPS API URL and browser-session API key; never ship the deployment's shared secret.
 - Set `OPENAI_API_KEY`, `PINECONE_API_KEY`, `PINECONE_ENVIRONMENT`, and AWS credentials only in local or deployment environment configuration.
 - Keep `/ask` and `/classify/builder` behind the shared caller API-key guard or a stronger API Gateway/JWT authorizer. Public asset routes may remain unauthenticated, but public asset routes must stay path-bound to `api/chalicelib/public`.
 - Keep request query validation bounded by a maximum query length before routes invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
