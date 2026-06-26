@@ -40,6 +40,9 @@ Helpful reports include:
 
 For web services, APIs, sockets, or scraping workflows, prioritize reports involving authentication bypass, authorization errors, injection, server-side request forgery, unsafe deserialization, credential leakage, data exposure, or denial-of-service conditions. Use test accounts and minimal proof-of-concept traffic only.
 
+Validate the maximum raw query length before trimming whitespace so padded
+requests cannot bypass the application-level resource boundary.
+
 For AI-generated responses, validate model output schemas before exposing values to callers. The `/classify/builder` response must remain limited to finite numeric `with_code`, `minimal_code`, and `no_code` weights.
 
 Retrieved document context should share one separator-aware total length budget

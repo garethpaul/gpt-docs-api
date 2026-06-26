@@ -85,8 +85,9 @@ The API implementation targets AWS Chalice, while repository settings publish
 the static project content through GitHub Pages. Vercel automatic Git deployments are disabled
 in `vercel.json` because their rewrite targeted the Flask entry point retired
 during the 2023 Chalice migration.
-Request validation rejects missing, non-string, whitespace-only, and over the
-maximum query length values before model or retrieval work starts.
+Request validation rejects missing, non-string, whitespace-only, and over-limit
+values. The maximum query length applies to the raw value before trimming or
+model and retrieval work.
 The retrieval context length guard enforces one separator-aware 4,000-character
 total retrieval context budget across accepted Pinecone matches before
 generated-answer prompt assembly. Links are returned only for included context.
@@ -114,8 +115,8 @@ When the required SDK or runtime is unavailable, use static checks and source re
   a stronger API Gateway/JWT authorizer. Public asset routes may remain
   unauthenticated, but public asset routes must stay path-bound to
   `api/chalicelib/public`.
-- Keep request query validation bounded by a maximum query length before routes
-  invoke OpenAI, Pinecone, DynamoDB, or cache helpers.
+- Keep the maximum query length applied to the raw request value before trimming
+  or invoking OpenAI, Pinecone, DynamoDB, or cache helpers.
 - DynamoDB cache entries expire after one day in application reads and include
   an integer `expires_at` epoch attribute for DynamoDB TTL cleanup.
 - Cache reads and writes use a fixed-size SHA-256 identity in the existing

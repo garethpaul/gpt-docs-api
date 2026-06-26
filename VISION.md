@@ -39,7 +39,8 @@ Priority:
 - Treat malformed cache payloads as misses and revalidate cached citations
 - Keep cache backend failures from blocking fresh or already generated answers
 - Keep unexpected route failures behind generic 500 errors
-- Keep request validation bounded by a maximum query length before model work
+- Keep the maximum query length applied to raw request values before trimming
+  or model work
 - Keep the classification weight schema explicit and numeric before returning
   model output to callers
 - Keep unauthenticated public asset serving path-bound to checked-in assets
@@ -88,7 +89,7 @@ Contribution rules:
   operational monitoring.
 - Keep unexpected route failures logged server-side while returning generic 500
   errors to callers.
-- Keep the maximum query length guard in request validation.
+- Keep the maximum query length guard before request normalization.
 - Keep the classification weight schema guard on `/classify/builder` responses.
 - Keep public asset routes path-bound to `api/chalicelib/public`.
 - Keep GitHub Actions aligned with the no-live-credentials local gate.

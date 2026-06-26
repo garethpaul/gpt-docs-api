@@ -1,5 +1,23 @@
 # Changes
 
+## 2026-06-26T22:48:23Z
+
+- **Priority:** Security and request resource boundaries.
+- **Summary:** Reject overlong raw query strings before trimming whitespace so
+  authenticated callers cannot bypass the documented request-size guard with
+  a tiny normalized query wrapped in excessive padding.
+- **Files:** `api/chalicelib/utils.py`, `api/tests/test_utils.py`,
+  `scripts/check-baseline.sh`, `README.md`, `SECURITY.md`, and `CHANGES.md`.
+- **Tests:** Added a focused failing regression before implementation; Python
+  3.10 `make verify` passes all 64 tests and repository baseline checks.
+- **Findings:** The checked-in extension clients still call authenticated API
+  routes without credentials; resolving that safely requires a separate trust
+  model rather than embedding a shared server secret in public JavaScript;
+  tracked separately as issue #36.
+- **Blockers:** None for this request-boundary fix.
+- **Next action:** Open the focused pull request and require hosted checks on
+  its exact head SHA before merge.
+
 ## 2026-06-18
 
 - Made Chalice package verification forward cancellation signals to its active
