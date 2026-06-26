@@ -31,6 +31,12 @@ class UtilsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Query is too long'):
             validate_request_payload({"query": "x" * (MAX_QUERY_LENGTH + 1)})
 
+    def test_validate_request_payload_rejects_overlong_raw_query(self):
+        with self.assertRaisesRegex(ValueError, 'Query is too long'):
+            validate_request_payload(
+                {"query": " " * MAX_QUERY_LENGTH + "x"}
+            )
+
     def test_validate_request_payload_accepts_maximum_length_query(self):
         query = "x" * MAX_QUERY_LENGTH
 

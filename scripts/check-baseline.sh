@@ -704,6 +704,7 @@ if ! grep -Fq "FakeOpenAIClient" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "test_validate_classification_weights_requires_expected_keys" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "test_validate_classification_weights_rejects_invalid_values" "$TEST_CLASSIFICATION" ||
   ! grep -Fq "test_generate_classification_wraps_malformed_weight_errors" "$TEST_CLASSIFICATION" ||
+  ! grep -Fq "test_validate_request_payload_rejects_overlong_raw_query" "$TEST_UTILS" ||
   ! grep -Fq "extract_json_object_returns_empty_dict_without_stdout" "$TEST_UTILS"; then
   printf '%s\n' "Tests must cover fake OpenAI clients, classification schemas, and quiet JSON parse failures." >&2
   exit 1

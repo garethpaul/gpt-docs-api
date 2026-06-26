@@ -16,11 +16,11 @@ def validate_request_payload(request_json) -> str:
         raise ValueError('Missing "query" key in request body')
     if not isinstance(query, str):
         raise ValueError('Query must be a string')
+    if len(query) > MAX_QUERY_LENGTH:
+        raise ValueError('Query is too long')
     query = query.strip()
     if not query:
         raise ValueError('Missing "query" key in request body')
-    if len(query) > MAX_QUERY_LENGTH:
-        raise ValueError('Query is too long')
     return query
 
 
