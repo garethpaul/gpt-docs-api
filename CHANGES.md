@@ -37,6 +37,8 @@
 
 - Dependency-backed Chalice package construction remains hosted because the
   local environment does not provide `chalice`.
+- `codex review --base origin/main` returned HTTP 401 before analysis; the
+  authentication-only review attempt was skipped after one invocation.
 
 ### Next action
 
