@@ -1,5 +1,12 @@
 # Changes
 
+## 2026-06-27
+
+- Made every Make gate preserve absolute checkout roots containing spaces and
+  quoted both extension-rendering inputs so the full baseline preserves those
+  roots. Added a recursive-safe regression that runs the full baseline from an
+  external caller directory against a copied spaced-path checkout.
+
 ## 2026-06-26T23:40:00Z
 
 - **Priority:** P0 authentication compatibility and credential containment.

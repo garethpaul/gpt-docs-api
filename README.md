@@ -61,7 +61,8 @@ make verify
 
 Every Make gate derives the checkout root from the loaded `Makefile`, so an
 absolute Makefile path can be invoked from any working directory without
-changing the test, compile, baseline, or package-verification scope.
+changing the test, compile, baseline, or package-verification scope, including
+when the absolute checkout path contains spaces.
 `make lint` runs `scripts/check-baseline.sh`, `make test` runs deterministic
 unit tests without live OpenAI, Pinecone, AWS, or Twilio credentials, and
 `make build` compiles the Chalice app and helper modules. `make verify` keeps

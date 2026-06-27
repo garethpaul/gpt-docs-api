@@ -60,6 +60,7 @@ PACKAGE_SIGNAL_PLAN="$ROOT_DIR/docs/plans/2026-06-18-chalice-package-signal-forw
 EXTENSION_AUTH_DESIGN="$ROOT_DIR/docs/plans/2026-06-26-extension-client-auth-design.md"
 EXTENSION_AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-26-extension-client-auth.md"
 EXTENSION_AUTH_CHECK="$ROOT_DIR/scripts/check-extension-auth.sh"
+MAKE_SPACED_PATH_CHECK="$ROOT_DIR/scripts/test-make-spaced-path.py"
 SYNTAX_CHECK="$ROOT_DIR/scripts/check-python-syntax.py"
 
 require_file() {
@@ -136,6 +137,7 @@ for path in \
   "scripts/check-dependency-lock.py" \
   "scripts/check-extension-rendering.sh" \
   "scripts/check-extension-auth.sh" \
+  "scripts/test-make-spaced-path.py" \
   "scripts/test-extension-auth-mutations.py" \
   "scripts/verify-chalice-package.sh" \
   "scripts/check-baseline.sh"; do
@@ -199,13 +201,25 @@ for target in "lint:" "test:" "build: compile" "compile:" "check:" "package-chec
 done
 
 for make_contract in \
-  'override ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))' \
+  'override makefile_space := __GPT_DOCS_API_MAKEFILE_SPACE__' \
+  'override encoded_makefile_list := $(patsubst $(makefile_space)%,%,$(subst $(space),$(makefile_space),$(MAKEFILE_LIST)))' \
+  'override ROOT := $(subst $(makefile_space),$(space),$(abspath $(dir $(lastword $(encoded_makefile_list)))))' \
   'cd "$(ROOT)" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=api python -m unittest discover -s api/tests' \
   'cd "$(ROOT)" && python "$(ROOT)/scripts/check-python-syntax.py" api/app.py api/chalicelib api/tests' \
   '"$(ROOT)/scripts/check-baseline.sh"' \
   '"$(ROOT)/scripts/verify-chalice-package.sh"'; do
   if ! grep -Fq "$make_contract" "$MAKEFILE"; then
     printf '%s\n' "Makefile must preserve location-independent command: $make_contract" >&2
+    exit 1
+  fi
+done
+
+for rendering_path_contract in \
+  '"$ROOT_DIR/chrome_extension/content.js"' \
+  '"$ROOT_DIR/api/chalicelib/public/content.js"' \
+  'for file in "$@"; do'; do
+  if ! grep -Fq "$rendering_path_contract" "$EXTENSION_RENDERING_CHECK"; then
+    printf '%s\n' "Extension rendering checks must preserve spaced paths: $rendering_path_contract" >&2
     exit 1
   fi
 done
@@ -1324,6 +1338,7 @@ PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover
 python "$SYNTAX_CHECK" "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
 "$EXTENSION_RENDERING_CHECK"
 "$EXTENSION_AUTH_CHECK"
+PYTHONDONTWRITEBYTECODE=1 python "$MAKE_SPACED_PATH_CHECK"
 
 generated_python_artifacts=$(
   find "$ROOT_DIR" \

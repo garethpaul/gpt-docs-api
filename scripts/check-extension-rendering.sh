@@ -2,12 +2,11 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-FILES="
-$ROOT_DIR/chrome_extension/content.js
-$ROOT_DIR/api/chalicelib/public/content.js
-"
+set -- \
+  "$ROOT_DIR/chrome_extension/content.js" \
+  "$ROOT_DIR/api/chalicelib/public/content.js"
 
-for file in $FILES; do
+for file in "$@"; do
   if grep -Fq 'innerHTML' "$file"; then
     printf '%s\n' "$file must not render content with innerHTML." >&2
     exit 1
