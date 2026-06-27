@@ -1,10 +1,15 @@
 .PHONY: build check compile lint mutations package-check test verify
 
-override empty :=
-override space := $(empty) $(empty)
-override makefile_space := __GPT_DOCS_API_MAKEFILE_SPACE__
-override encoded_makefile_list := $(patsubst $(makefile_space)%,%,$(subst $(space),$(makefile_space),$(MAKEFILE_LIST)))
-override ROOT := $(subst $(makefile_space),$(space),$(abspath $(dir $(lastword $(encoded_makefile_list)))))
+ifneq ($(strip $(MAKEFILES)),)
+$(error MAKEFILES must be empty; repository verification requires this Makefile to be loaded alone)
+endif
+ifneq ($(origin MAKEFILE_LIST),file)
+$(error MAKEFILE_LIST must not be overridden)
+endif
+override ROOT := $(shell path='$(subst ','"'"',$(MAKEFILE_LIST))'; path=$$(printf '%s' "$$path" | /usr/bin/sed 's/^ //'); [ -f "$$path" ] || exit 1; directory=$$(/usr/bin/dirname -- "$$path"); CDPATH= cd -- "$$directory" && /bin/pwd -P)
+ifeq ($(strip $(ROOT)),)
+$(error repository Makefile path could not be resolved)
+endif
 
 lint: check
 

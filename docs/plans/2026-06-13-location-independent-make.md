@@ -17,8 +17,8 @@ dependencies, deployment ownership, and credential boundaries.
 
 ## Scope
 
-1. Derive the repository root from an encoded `MAKEFILE_LIST` that preserves
-   spaces in the loaded Makefile path.
+1. Resolve one validated loaded Makefile as a whole path without Make list
+   tokenization and reject startup-variable authority injection.
 2. Run test and compile commands from that root.
 3. Invoke baseline and Chalice package checkers through rooted paths.
 4. Preserve quoted extension-rendering source paths inside the baseline.
@@ -43,8 +43,9 @@ caller-relative recipes; no runtime state or persistent migration exists.
 
 ## Work Completed
 
-- Derived `ROOT` from a sentinel-encoded loaded `Makefile` path and anchored
-  test and compile recipes to that directory, including paths with spaces.
+- Derived `ROOT` from one shell-quoted, validated loaded `Makefile` path and
+  anchored test and compile recipes to that directory, including paths with
+  spaces. `MAKEFILES` and overridden `MAKEFILE_LIST` fail before recipes run.
 - Invoked baseline and Chalice package verification through absolute rooted
   script paths.
 - Added baseline contracts for the rooted command surface, completed plan

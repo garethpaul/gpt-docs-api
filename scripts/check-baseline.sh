@@ -201,9 +201,10 @@ for target in "lint:" "test:" "build: compile" "compile:" "check:" "package-chec
 done
 
 for make_contract in \
-  'override makefile_space := __GPT_DOCS_API_MAKEFILE_SPACE__' \
-  'override encoded_makefile_list := $(patsubst $(makefile_space)%,%,$(subst $(space),$(makefile_space),$(MAKEFILE_LIST)))' \
-  'override ROOT := $(subst $(makefile_space),$(space),$(abspath $(dir $(lastword $(encoded_makefile_list)))))' \
+  'MAKEFILES must be empty; repository verification requires this Makefile to be loaded alone' \
+  'MAKEFILE_LIST must not be overridden' \
+  'override ROOT := $(shell path=' \
+  'repository Makefile path could not be resolved' \
   'cd "$(ROOT)" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=api python -m unittest discover -s api/tests' \
   'cd "$(ROOT)" && python "$(ROOT)/scripts/check-python-syntax.py" api/app.py api/chalicelib api/tests' \
   '"$(ROOT)/scripts/check-baseline.sh"' \

@@ -17,7 +17,7 @@
 
 - Install dependencies: `python -m pip install --require-hashes --only-binary=:all: -r api/requirements.txt`
 - Full baseline: `make check`
-- Make gates support absolute checkout paths containing spaces; preserve the encoded `MAKEFILE_LIST` root derivation and its recursive regression.
+- Make gates support absolute checkout paths containing spaces; preserve the validated single-Makefile root derivation, startup-authority rejection, and recursive regression.
 - Combined verification: `make verify`
 - Lint/static checks: `make lint`
 - Tests: `make test`
