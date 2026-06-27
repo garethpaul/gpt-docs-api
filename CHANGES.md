@@ -1,5 +1,49 @@
 # Changes
 
+## 2026-06-26 18:30 PDT - P2 - Spaced verification paths
+
+### Summary
+
+- Made every Make gate preserve absolute checkout roots containing spaces and
+  quoted both extension-rendering inputs so the full baseline preserves those
+  roots. Added a recursive-safe regression that runs the full baseline from an
+  external caller directory against a copied spaced-path checkout.
+
+### Files changed
+
+- `Makefile` — validated single-file root resolution and startup-authority
+  rejection.
+- `scripts/check-baseline.sh`, `scripts/check-extension-rendering.sh`, and
+  `scripts/test-make-spaced-path.py` — path-safe checks and regressions.
+- `AGENTS.md`, `README.md`, and
+  `docs/plans/2026-06-13-location-independent-make.md` — synchronized contract.
+
+### Validation
+
+- The prior root expression failed from spaced checkouts; the extension checker
+  separately split its two source paths.
+- Exact hosted gates cover all 65 API tests, extension rendering/authentication,
+  package boundaries, the recursive spaced-path check, and CodeQL.
+- Local parser probes confirm exact spaced-root resolution and fail-closed
+  `MAKEFILES`/`MAKEFILE_LIST` handling.
+
+### Bugs / findings
+
+- Sentinel replacement also collapsed separators between multiple loaded
+  Makefiles, producing a concatenated false root. The final resolver requires
+  one authoritative Makefile instead of guessing.
+
+### Blockers
+
+- Dependency-backed Chalice package construction remains hosted because the
+  local environment does not provide `chalice`.
+- `codex review --base origin/main` returned HTTP 401 before analysis; the
+  authentication-only review attempt was skipped after one invocation.
+
+### Next action
+
+- Re-run all hosted gates on the corrected exact head and merge only when green.
+
 ## 2026-06-26T23:40:00Z
 
 - **Priority:** P0 authentication compatibility and credential containment.
