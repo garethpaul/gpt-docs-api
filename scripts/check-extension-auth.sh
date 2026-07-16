@@ -192,6 +192,44 @@ async function verifyOptions(directory) {
   );
 }
 
+// Every resource the content script asks Chrome for must be declared
+// web-accessible and exist on disk, per copy. MV3 blocks an undeclared resource
+// at runtime, so a getURL() call that outruns web_accessible_resources fails
+// silently when the extension is installed unpacked. Checking each copy against
+// its own manifest catches that without requiring the copies to be identical.
+function verifyRuntimeResources(directory, manifest) {
+  const source = fs.readFileSync(
+    path.join(root, directory, "content.js"),
+    "utf8",
+  );
+  const declared = new Set(
+    (manifest.web_accessible_resources || []).flatMap(
+      (entry) => entry.resources || [],
+    ),
+  );
+
+  const requested = new Set();
+  const pattern = /chrome\.runtime\.getURL\(\s*["']([^"']+)["']\s*\)/g;
+  for (const match of source.matchAll(pattern)) {
+    requested.add(match[1]);
+  }
+  assert.ok(
+    requested.size > 0,
+    `${directory}/content.js must request at least one runtime resource`,
+  );
+
+  for (const resource of requested) {
+    assert.ok(
+      declared.has(resource),
+      `${directory}/content.js requests ${resource} via chrome.runtime.getURL, but ${directory}/manifest.json does not list it in web_accessible_resources; MV3 blocks it`,
+    );
+    assert.ok(
+      fs.existsSync(path.join(root, directory, resource)),
+      `${directory}/manifest.json declares ${resource} but the file is missing`,
+    );
+  }
+}
+
 (async () => {
   for (const directory of directories) {
     const manifest = JSON.parse(
@@ -202,6 +240,7 @@ async function verifyOptions(directory) {
     assert.ok(manifest.permissions.includes("storage"));
     assert.equal(manifest.options_page, "options.html");
     assert.equal(manifest.background.service_worker, "background.js");
+    verifyRuntimeResources(directory, manifest);
     await verifyContentScript(directory);
     verifyBackground(directory);
     await verifyOptions(directory);

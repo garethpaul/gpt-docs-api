@@ -31,7 +31,7 @@
   "options_page": "options.html",
   "web_accessible_resources": [
     {
-      "resources": ["logo-nav.svg", "question.svg", "gpt-docs-nav.png"],
+      "resources": ["logo-nav.svg", "question.svg", "gpt-docs-nav.png", "gpt-docs-nav.svg"],
       "matches": ["<all_urls>"]
     }  ]
 }
