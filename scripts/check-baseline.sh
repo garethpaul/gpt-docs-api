@@ -62,6 +62,9 @@ EXTENSION_AUTH_PLAN="$ROOT_DIR/docs/plans/2026-06-26-extension-client-auth.md"
 EXTENSION_AUTH_CHECK="$ROOT_DIR/scripts/check-extension-auth.sh"
 MAKE_SPACED_PATH_CHECK="$ROOT_DIR/scripts/test-make-spaced-path.py"
 SYNTAX_CHECK="$ROOT_DIR/scripts/check-python-syntax.py"
+AUTH_MUTATION_HARNESS="$ROOT_DIR/scripts/test-extension-auth-mutations.py"
+GATE_INTEGRITY_CHECK="$ROOT_DIR/scripts/check-gate-integrity.py"
+GATE_RUNNER_PLAN="$ROOT_DIR/docs/plans/2026-07-17-gate-runner-execution-observation.md"
 
 require_file() {
   path=$1
@@ -135,6 +138,8 @@ for path in \
   "api/chalicelib/public/options.js" \
   "scripts/check-python-syntax.py" \
   "scripts/check-dependency-lock.py" \
+  "scripts/check-gate-integrity.py" \
+  "docs/plans/2026-07-17-gate-runner-execution-observation.md" \
   "scripts/check-extension-rendering.sh" \
   "scripts/check-extension-auth.sh" \
   "scripts/test-make-spaced-path.py" \
@@ -193,9 +198,28 @@ if "rewrites" in config:
     )
 PY
 
-for target in "lint:" "test:" "build: compile" "compile:" "check:" "package-check:" "verify: test compile check"; do
-  if ! grep -Fq "$target" "$MAKEFILE"; then
-    printf '%s\n' "Makefile must expose target: $target" >&2
+# Whole-line pins, prerequisites included. A substring pin for "lint:" is
+# self-satisfying: stripping the prerequisite from "lint: check" leaves "lint:",
+# which still matches while making `make lint` a silent no-op. Recipe lines are
+# pinned verbatim so an appended "|| true" cannot hide behind a prefix match.
+TAB=$(printf '\t')
+for gate_line in \
+  ".PHONY: build check compile lint mutations package-check test verify" \
+  "lint: check" \
+  "test:" \
+  "$TAB"'@cd "$(ROOT)" && PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=api python -m unittest discover -s api/tests' \
+  "build: compile" \
+  "compile:" \
+  "$TAB"'@cd "$(ROOT)" && python "$(ROOT)/scripts/check-python-syntax.py" api/app.py api/chalicelib api/tests' \
+  "mutations:" \
+  "$TAB"'@cd "$(ROOT)" && PYTHONDONTWRITEBYTECODE=1 python "$(ROOT)/scripts/test-extension-auth-mutations.py"' \
+  "check:" \
+  "$TAB"'@"$(ROOT)/scripts/check-baseline.sh"' \
+  "package-check:" \
+  "$TAB"'@"$(ROOT)/scripts/verify-chalice-package.sh"' \
+  "verify: test compile check"; do
+  if ! grep -Fxq "$gate_line" "$MAKEFILE"; then
+    printf '%s\n' "Makefile must preserve this gate line verbatim: $gate_line" >&2
     exit 1
   fi
 done
@@ -305,6 +329,26 @@ if ! grep -Fq "workflow_dispatch:" "$CI_WORKFLOW" ||
   ! grep -Fq "make package-check" "$CI_WORKFLOW" ||
   ! grep -Fq "make check" "$CI_WORKFLOW"; then
   printf '%s\n' "GitHub Actions must keep the pinned Python 3.10 dependency and test contract." >&2
+  exit 1
+fi
+
+# Whole-line run pins. "make check" is a prefix of "make check || true", so a
+# substring pin passes byte-identically against a neutered runner. Each gate
+# runner must also stay in its own step: adjacency-preserving neuters such as
+# continue-on-error discard a step's verdict while a block pin still matches.
+for ci_run_line in \
+  "        run: python scripts/check-gate-integrity.py" \
+  "        run: make package-check" \
+  "        run: make check" \
+  "        run: make mutations"; do
+  if ! grep -Fxq "$ci_run_line" "$CI_WORKFLOW"; then
+    printf '%s\n' "GitHub Actions must invoke this gate runner verbatim: $ci_run_line" >&2
+    exit 1
+  fi
+done
+
+if grep -Fq "continue-on-error" "$CI_WORKFLOW"; then
+  printf '%s\n' "GitHub Actions must not use continue-on-error: it discards a gate step's verdict." >&2
   exit 1
 fi
 
@@ -1335,8 +1379,72 @@ if (
     )
 PY
 
+# The hostile mutation harness is the only control proving the extension
+# authentication checks still DETECT rather than merely run. It executes in its
+# own CI step, so this baseline can pin its teeth without sitting inside its
+# blast radius -- and it, in turn, observes this baseline's runner.
+python3 - "$AUTH_MUTATION_HARNESS" <<'PY'
+import re
+import sys
+from pathlib import Path
+
+harness = Path(sys.argv[1]).read_text(encoding="utf-8")
+required = (
+    'raise SystemExit(f"hostile mutation survived: {relative_path}: {original}")',
+    "if not mutation_is_rejected(mutation_root, command):",
+    "return result.returncode != 0",
+    'raise RuntimeError(f"mutation anchor is not unique: {relative_path}: {original}")',
+    "check=False,",
+)
+if any(item not in harness for item in required):
+    raise SystemExit(
+        "Extension authentication mutation harness must apply each mutation and "
+        "fail when one survives."
+    )
+# A planted-defect control proves nothing if its mutations are deleted.
+mutation_count = len(re.findall(r"^\s{8}AUTH_CHECK,$|^\s{8}PYTHON_CORS_CHECK,$", harness, flags=re.MULTILINE))
+if mutation_count < 13:
+    raise SystemExit(
+        f"Extension authentication mutation harness must retain at least 13 hostile "
+        f"mutations; found {mutation_count}."
+    )
+PY
+
+# The out-of-band observer of the Make gate's exit-status propagation. It runs as
+# its own CI step, invoked directly rather than through `make`, so a neutered
+# recipe cannot discard its verdict.
+python3 - "$GATE_INTEGRITY_CHECK" <<'PY'
+import sys
+from pathlib import Path
+
+checker = Path(sys.argv[1]).read_text(encoding="utf-8")
+required = (
+    '"lint: check"',
+    '"mutations:"',
+    '"        run: make check"',
+    '"        run: make mutations"',
+    '"        run: python scripts/check-gate-integrity.py"',
+    'if "continue-on-error" in text:',
+    'r"\\|\\|\\s*true\\b"',
+    "def check_makefile_recipes(lines):",
+    "check_makefile_recipes(makefile_lines)",
+)
+if any(item not in checker for item in required):
+    raise SystemExit(
+        "Gate integrity observer must pin every gate runner line and reject "
+        "exit-status discarding neuters."
+    )
+PY
+
+if ! grep -Fq "status: completed" "$GATE_RUNNER_PLAN" ||
+  ! grep -Fq "make mutations" "$GATE_RUNNER_PLAN"; then
+  printf '%s\n' "Gate runner execution plan must record completed status and the mutation runner." >&2
+  exit 1
+fi
+
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH="$ROOT_DIR/api" python -m unittest discover -s "$ROOT_DIR/api/tests"
 python "$SYNTAX_CHECK" "$ROOT_DIR/api/app.py" "$ROOT_DIR/api/chalicelib" "$ROOT_DIR/api/tests"
+python3 "$GATE_INTEGRITY_CHECK"
 "$EXTENSION_RENDERING_CHECK"
 "$EXTENSION_AUTH_CHECK"
 PYTHONDONTWRITEBYTECODE=1 python "$MAKE_SPACED_PATH_CHECK"

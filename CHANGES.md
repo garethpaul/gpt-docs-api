@@ -1,5 +1,41 @@
 # Changes
 
+## 2026-07-17 09:00 PDT - P1 - Gate runners observed executing and gating
+
+### Summary
+
+- Ran the hostile mutation control in CI for the first time. `make mutations`
+  applies 13 hostile extension-authentication mutations and asserts each is
+  rejected, but nothing invoked it: not CI, not `make verify`, not the baseline,
+  which asserted only that the file exists. With it dark, deleting one assertion
+  from `scripts/check-extension-auth.sh` and then breaking the real
+  `X-GPT-Docs-API-Key` header in both `content.js` copies left `make check` green
+  at exit 0, printing `GPT Docs extension authentication checks passed.`
+- Closed the exit-status channel on the Makefile. The gate contract used
+  substring pins, and `"$(ROOT)/scripts/check-baseline.sh"` is a prefix of the
+  same line plus `|| true`: with that neuter applied, an inverted authentication
+  comparison printed `FAILED (failures=9, errors=3)` while `make check` exited 0.
+  Gate lines are now pinned whole-line, and a new out-of-band observer invoked
+  directly by its own CI step rejects exit-status-discarding neuters.
+- Fixed a self-satisfying target-name pin: `lint: check` could be reduced to
+  `lint:` and still match `grep -Fq "lint:"`, making the documented `make lint`
+  gate a silent no-op.
+- Rejected `continue-on-error` anywhere in the workflow: it preserves adjacency
+  so a block pin still matches, while discarding a step's verdict exactly as
+  `|| true` does.
+
+### Files changed
+
+- `scripts/check-gate-integrity.py` — new out-of-band observer of Make gate and
+  CI exit-status propagation.
+- `.github/workflows/check.yml` — two new independent steps: the gate integrity
+  observer (invoked directly, not through `make`) and `make mutations`.
+- `scripts/check-baseline.sh` — whole-line Makefile and CI run-line pins,
+  `continue-on-error` rejection, and pins on the mutation harness's teeth and
+  the observer's rules.
+- `docs/plans/2026-07-17-gate-runner-execution-observation.md` — recorded
+  measurements, both-direction failure injection, and the bootstrap limit.
+
 ## 2026-06-26 18:30 PDT - P2 - Spaced verification paths
 
 ### Summary

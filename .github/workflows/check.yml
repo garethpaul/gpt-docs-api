@@ -39,8 +39,21 @@ jobs:
       - name: Verify dependency consistency
         run: python -m pip check
 
+      # Invoked directly, never through `make`: this step observes the Make
+      # gate's exit-status propagation, so routing it through the gate it
+      # observes would place it inside its own blast radius.
+      - name: Verify Make gate and CI integrity
+        run: python scripts/check-gate-integrity.py
+
       - name: Verify Chalice deployment package
         run: make package-check
 
       - name: Run baseline
         run: make check
+
+      # Independent step: the planted-defect control proving the extension
+      # authentication checks still detect. `make check` cannot host it --
+      # the baseline pins this harness, and the harness proves the checks the
+      # baseline executes still have teeth.
+      - name: Run hostile mutation controls
+        run: make mutations
